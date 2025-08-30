@@ -1,0 +1,25 @@
+cc_library(
+    name = "cad_pipeline",
+    srcs = [
+    ],
+    hdrs = [
+        "brep.h",
+        "chamfer.h",
+        "file_writer.h",
+        "interpreter.h",
+        "mesh.h",
+        "plane.h",
+        "primitives.h",
+        "spatial_body.h",
+        "types.h",
+    ],
+    deps = ["@pmp"],
+)
+
+cc_binary(
+    name = "cad_binary",
+    srcs = ["main.cc"],
+    deps = [
+        ":cad_pipeline",
+    ],
+)

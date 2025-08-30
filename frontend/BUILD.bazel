@@ -1,0 +1,20 @@
+load("@aspect_rules_js//js:defs.bzl", "js_run_devserver")
+load("@npm//:statikk/package_json.bzl", statikk_bin = "bin")
+
+statikk_bin.statikk_binary(
+    name = "statikk",
+)
+
+# js_run_devserver(
+#     name = "serve",
+#     args = [
+#         "--port",
+#         "8000",
+#         "--coi",
+#     ],
+#     data = [
+#         "index.html",
+#         "//primes:primes_bin_wasm",
+#     ],
+#     tool = ":statikk",
+# )
