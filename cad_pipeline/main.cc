@@ -1,8 +1,10 @@
+#include "executor.h"
 #include "interpreter.h"
 #include "primitives.h"
 
 int main() {
-  ParseAndExecute("N1N2N3C");  
+  Executor ex;
+  ParseAndExecute("N1N2N3C", ex);
 
   return 0;
 };

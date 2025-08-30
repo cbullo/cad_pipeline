@@ -2,9 +2,12 @@
 
 #include <charconv>
 #include <iostream>
+#include <stack>
 #include <string>
 #include <variant>
 #include <vector>
+
+#include "visit_helper.h"
 
 template <char Mnemonic>
 struct Token {
@@ -37,11 +40,11 @@ struct Token<'N'> {
 using ConstNumber = Token<'N'>;
 using Cube = Token<'C'>;
 
-using Tokens = std::variant<ConstNumber, Cube>;
+using TokenVariant = std::variant<ConstNumber, Cube>;
 
-std::vector<Tokens> Parse(const std::string& input) {
+std::vector<TokenVariant> Parse(const std::string& input) {
   std::string_view input_view(input);
-  std::vector<Tokens> tokens;
+  std::vector<TokenVariant> tokens;
 
   [&input_view]<typename... T>(std::vector<std::variant<T...>>& tokens) {
     auto invoke = [&tokens, &input_view](std::string_view& input) {
@@ -52,7 +55,7 @@ std::vector<Tokens> Parse(const std::string& input) {
           [key, &input_view, &tokens]() {
             if (key == T::MnemonicValue) {
               const auto& token = T::Consume(input_view);
-              tokens.push_back(Tokens(token));
+              tokens.push_back(TokenVariant(token));
               std::cout << key;
             }
           }(),
@@ -67,8 +70,26 @@ std::vector<Tokens> Parse(const std::string& input) {
   return tokens;
 }
 
-// template <typename Executor,
-//           typename RuntimeValue = typename Executor::RuntimeValue>
-auto ParseAndExecute(const std::string& input) {
+template <typename Executor>
+void Execute(Executor& exec, const std::vector<TokenVariant>& tokens) {
+  std::stack<typename Executor::RuntimeType> runtime_stack;
+
+  for (const auto& token : tokens) {
+    std::visit(overloaded{[&runtime_stack](const ConstNumber& n) {
+                            runtime_stack.push(n.value);
+                          },
+                          [&exec, &runtime_stack](const auto& arg) {
+                            exec.Invoke(
+                                std::decay_t<decltype(arg)>::MnemonicValue,
+                                runtime_stack);
+                          }},
+               token);
+  }
+}
+
+template <typename Executor>
+auto ParseAndExecute(const std::string& input, Executor& ex) {
+  
   const auto& tokens = Parse(input);
+  Execute(ex, tokens);
 }

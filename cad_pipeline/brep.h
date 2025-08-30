@@ -1,3 +1,5 @@
+#pragma once
+
 #include "pmp/surface_mesh.h"
 
 class BRep {
@@ -5,7 +7,7 @@ class BRep {
   const pmp::SurfaceMesh& GetTopology() const { return _mesh; }
 
 
-  
+
  private:
   pmp::SurfaceMesh _mesh;
 };
