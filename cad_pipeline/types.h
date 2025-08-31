@@ -8,7 +8,7 @@
 #include "pmp/types.h"
 #include "polygon.h"
 
-using Scalar = double;
+using Scalar = float;
 using Vector3 = pmp::Vector<Scalar, 3>;
 
 // TODO: Not ideal

@@ -56,7 +56,6 @@ std::vector<TokenVariant> Parse(const std::string& input) {
             if (key == T::MnemonicValue) {
               const auto& token = T::Consume(input_view);
               tokens.push_back(TokenVariant(token));
-              std::cout << key;
             }
           }(),
           ...);
@@ -71,7 +70,7 @@ std::vector<TokenVariant> Parse(const std::string& input) {
 }
 
 template <typename Executor>
-void Execute(Executor& exec, const std::vector<TokenVariant>& tokens) {
+void Process(Executor& exec, const std::vector<TokenVariant>& tokens) {
   std::stack<typename Executor::RuntimeType> runtime_stack;
 
   for (const auto& token : tokens) {
@@ -88,8 +87,8 @@ void Execute(Executor& exec, const std::vector<TokenVariant>& tokens) {
 }
 
 template <typename Executor>
-auto ParseAndExecute(const std::string& input, Executor& ex) {
+auto ParseAndProcess(const std::string& input, Executor& executor) {
   
   const auto& tokens = Parse(input);
-  Execute(ex, tokens);
+  Process(ex, tokens);
 }

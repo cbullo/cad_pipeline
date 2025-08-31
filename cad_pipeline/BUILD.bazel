@@ -5,6 +5,7 @@ cc_library(
     hdrs = [
         "brep.h",
         "chamfer.h",
+        "cube.h",
         "executor.h",
         "file_writer.h",
         "interpreter.h",

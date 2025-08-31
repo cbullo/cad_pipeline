@@ -4,9 +4,11 @@
 
 class BRep {
  public:
+  BRep() {};
+  BRep(pmp::SurfaceMesh&& mesh) : _mesh(mesh) {};
+
   const pmp::SurfaceMesh& GetTopology() const { return _mesh; }
-
-
+  pmp::SurfaceMesh& GetTopology() { return _mesh; }
 
  private:
   pmp::SurfaceMesh _mesh;

@@ -1,20 +1,12 @@
+#pragma once
+
+
 class Planner {
+  void ProcessRequestsStack(std::stack<Request>& request_stack) {
+    while(!request_stack.empty()) {
+      auto op = request_stack.top();
+      request_stack.pop();
 
-
-
-  void Investigate(const Node& node) {
-    // auto inputs_version = node->GetInputsVersion(this, version_cache);
-  
-    // if (!node->HasVersion(inputs_version)) {
-    //   auto inputs = node->GetInputs();
-    //   operations.push(node, inputs);
-    //   node->FollowInputs<Output>(this);
-    // }
-
-    std::stack nodes;
-    nodes.push(&node);
-    while (!nodes.empty()) {
-      
     }
   }
 };
