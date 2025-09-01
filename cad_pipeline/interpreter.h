@@ -37,10 +37,13 @@ struct Token<'N'> {
   }
 };
 
-using ConstNumber = Token<'N'>;
-using Cube = Token<'C'>;
+using ConstNumberToken = Token<'N'>;
+using CubeToken = Token<'C'>;
+using WriteToken = Token<'W'>;
+using TriangulateToken = Token<'T'>;
 
-using TokenVariant = std::variant<ConstNumber, Cube>;
+using TokenVariant =
+    std::variant<ConstNumberToken, CubeToken, WriteToken, TriangulateToken>;
 
 std::vector<TokenVariant> Parse(const std::string& input) {
   std::string_view input_view(input);
@@ -70,25 +73,26 @@ std::vector<TokenVariant> Parse(const std::string& input) {
 }
 
 template <typename Executor>
-void Process(Executor& exec, const std::vector<TokenVariant>& tokens) {
+void Process(Executor& exec, const std::vector<TokenVariant>& tokens,
+             Cache& cache) {
   std::stack<typename Executor::RuntimeType> runtime_stack;
 
   for (const auto& token : tokens) {
-    std::visit(overloaded{[&runtime_stack](const ConstNumber& n) {
+    std::visit(overloaded{[&runtime_stack](const ConstNumberToken& n) {
                             runtime_stack.push(n.value);
                           },
-                          [&exec, &runtime_stack](const auto& arg) {
+                          [&exec, &runtime_stack, &cache](const auto& arg) {
                             exec.Invoke(
                                 std::decay_t<decltype(arg)>::MnemonicValue,
-                                runtime_stack);
+                                runtime_stack, cache);
                           }},
                token);
   }
 }
 
 template <typename Executor>
-auto ParseAndProcess(const std::string& input, Executor& executor) {
-  
+auto ParseAndProcess(const std::string& input, Executor& executor,
+                     Cache& cache) {
   const auto& tokens = Parse(input);
-  Process(ex, tokens);
+  Process(executor, tokens, cache);
 }

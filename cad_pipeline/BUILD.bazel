@@ -4,6 +4,7 @@ cc_library(
     ],
     hdrs = [
         "brep.h",
+        "cache.h",
         "chamfer.h",
         "cube.h",
         "executor.h",
@@ -14,8 +15,10 @@ cc_library(
         "polygon.h",
         "primitives.h",
         "spatial_body.h",
+        "triangulate.h",
         "types.h",
         "visit_helper.h",
+        "write_stl.h",
     ],
     deps = ["@pmp"],
 )

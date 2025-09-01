@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <variant>
 
+#include "cache.h"
 #include "types.h"
 #include "visit_helper.h"
 
@@ -13,16 +14,44 @@ using RuntimeType = std::variant<float, GeomId>;
 using RuntimeStack = std::stack<RuntimeType>;
 
 std::string NormalizeKey(const GeomId& g) { return g; }
-
 std::string NormalizeKey(float v) { return std::format("N{:.8f}", v); }
 
-template <char Key, typename F, typename... Param>
+// Your target type
+struct MyType {
+  std::string value;
+};
+
+// Customization functor: special-case GeomId, identity for others
+struct Convert {
+  // TODO: doesn't work with a reference, why?
+  AnyGeometry operator()(/*const*/ GeomId /*&*/ id, Cache& cache) const {
+    return cache.at(id);
+  }
+
+  template <class T>
+  constexpr T operator()(T&& x, Cache&) const noexcept {
+    return std::forward<T>(x);  // identity
+  }
+};
+
+// Generic tuple transform (C++17)
+template <class F, class Tuple>
+auto tuple_transform(Tuple&& tup, F&& f, Cache& cache) {
+  return std::apply(
+      [&](auto&&... xs) {
+        return std::tuple<std::decay_t<decltype(f(
+            std::forward<decltype(xs)>(xs), cache))>...>{
+            f(std::forward<decltype(xs)>(xs), cache)...};
+      },
+      std::forward<Tuple>(tup));
+}
+
+template <char Key, bool Cachable, auto F, typename... Param>
 struct Op {
   static const char keyValue = Key;
   using ParamsTuple = std::tuple<Param...>;
-  using Process = F;
 
-  static std::string ConsumeParams(RuntimeStack& runtime_stack) {
+  static std::string ConsumeParams(RuntimeStack& runtime_stack, Cache& cache) {
     using ParamsSequence = std::index_sequence_for<Param...>;
 
     ParamsTuple params;
@@ -39,7 +68,8 @@ struct Op {
                              std::get<I>(params) = op;
                            },
                            [](const auto& n) {
-                             std::println("Incorrect runtime type: {} {}", n, I);
+                             std::println("Incorrect runtime type: {} {}", n,
+                                          I);
                            }},
                 var);
           }(),
@@ -48,13 +78,28 @@ struct Op {
 
     indexed_lambda.template operator()<>(ParamsSequence{});
 
-    std::string out;
+    std::string params_key;
     std::apply(
-        [&out](Param const&... tupleArgs) {
-          ((out.append(NormalizeKey(tupleArgs))), ...);
+        [&params_key](Param const&... tupleArgs) {
+          ((params_key.append(NormalizeKey(tupleArgs))), ...);
         },
         params);
-    return out;
+
+    GeomId cache_key = std::format("{}{}", params_key, Key);
+
+    // []<typename ...T>(std::tuple<T...>&& p) {
+    //   F(p...);
+    // }(params);
+
+    Convert c{};
+    auto callable_params = tuple_transform(params, c, cache);
+
+    // TODO: Don't call operations here - they should be processed by Planner
+    // and Scheduler.
+    auto geometry = std::apply(F, callable_params);
+    cache[cache_key] = geometry;
+
+    return cache_key;
   }
 
   static void GetNormalizedOp(Param... params) {}
@@ -64,11 +109,12 @@ class Executor {
  public:
   using RuntimeType = ::RuntimeType;
 
-  void Invoke(const char mnemonic, RuntimeStack& runtime_stack) {
+  void Invoke(const char mnemonic, RuntimeStack& runtime_stack, Cache& cache) {
     auto& op = GetOp(mnemonic);
-    
-    GeomId key = std::format("{}{}", op.consume_params(runtime_stack), mnemonic);
-    _request_stack.push(Request{key, params, &op::Process});
+
+    auto key = op.consume_params(runtime_stack, cache);
+    std::println("{}", key);
+    _request_stack.push(key);
     runtime_stack.push(key);
   }
 
@@ -82,11 +128,11 @@ class Executor {
 
  private:
   struct InternalOp {
-    std::function<std::string(RuntimeStack&)> consume_params;
+    std::function<std::string(RuntimeStack&, Cache&)> consume_params;
   };
 
   InternalOp& GetOp(const char key) { return _ops[key]; }
 
   std::unordered_map<char, InternalOp> _ops;
-  std::stack<Request> _request_stack; 
+  RuntimeStack _request_stack;
 };
