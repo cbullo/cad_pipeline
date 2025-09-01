@@ -20,7 +20,7 @@ cc_library(
         "visit_helper.h",
         "write_stl.h",
     ],
-    deps = ["@pmp"],
+    deps = ["@pmp", "@ttf2mesh"],
 )
 
 cc_binary(
@@ -29,4 +29,14 @@ cc_binary(
     deps = [
         ":cad_pipeline",
     ],
+)
+
+# A rule to generate a 3D model for a static html page. Uses :cad_binary at build time
+genrule(
+    name = "make_model",
+    srcs = [],
+    outs = ["out.stl"],
+    cmd = "./$(location :cad_binary) && cp ./out.stl $@",
+    tools = [":cad_binary"],
+    visibility = ["//visibility:public"],
 )

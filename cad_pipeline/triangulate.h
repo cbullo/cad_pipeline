@@ -16,6 +16,7 @@ AnyGeometry Triangulate(const AnyGeometry &geometry) {
             const auto &surf_mesh = brep->GetTopology();
             pmp::SurfaceMesh triangulated = surf_mesh;
             pmp::triangulate(triangulated);
+            pmp::face_normals(triangulated);
 
             return AnyGeometry(std::make_shared<Mesh>(triangulated));
           },

@@ -10,6 +10,6 @@
     "author": "",
     "license": "ISC",
     "devDependencies": {
-        "statikk": "^2.2.2"
+        "http-server": "^14.1.1"
     }
 }

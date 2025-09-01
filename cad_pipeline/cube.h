@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <print>
+#include <cmath>
 
 #include "brep.h"
 #include "pmp/algorithms/normals.h"
@@ -11,10 +12,12 @@
 AnyGeometry MakeCube(float half_extent) {
   std::println("MakeCube({})", half_extent);
   auto cube = pmp::hexahedron();
-  pmp::face_normals(cube);
-  auto& positions = cube.positions();
-  for (auto& p : positions) {
-    p *= half_extent;
+  
+  for (const auto& v : cube.vertices()) {
+    cube.position(v) *= sqrt(3.0) * half_extent;
   }
+
+  pmp::face_normals(cube);
+
   return std::make_shared<BRep>(cube);
 }

@@ -10,7 +10,6 @@ cmake(
     name = "pmp",
     generate_args = [
         "-G Ninja",
-        "-DPMP_SCALAR_TYPE=64",
         "-DPMP_BUILD_EXAMPLES=OFF",
         "-DPMP_BUILD_TESTS=OFF",
         "-DPMP_BUILD_DOCS=OFF",

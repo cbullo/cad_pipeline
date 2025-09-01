@@ -1,20 +1,23 @@
 load("@aspect_rules_js//js:defs.bzl", "js_run_devserver")
-load("@npm//:statikk/package_json.bzl", statikk_bin = "bin")
+load("@npm//:http-server/package_json.bzl", http_server_bin = "bin")
 
-statikk_bin.statikk_binary(
-    name = "statikk",
+http_server_bin.http_server_binary(
+    name = "http-server",
 )
 
-# js_run_devserver(
-#     name = "serve",
-#     args = [
-#         "--port",
-#         "8000",
-#         "--coi",
-#     ],
-#     data = [
-#         "index.html",
-#         "//primes:primes_bin_wasm",
-#     ],
-#     tool = ":statikk",
-# )
+js_run_devserver(
+    name = "serve",
+    args = [
+        "--port",
+        "8080",
+        "-o",
+        "/frontend/index.html?model=/$(location //cad_pipeline:make_model)",
+    ],
+    data = [
+        "index.html",
+        "main.css",
+        "//cad_pipeline:make_model",
+    ],
+    tool = ":http-server",
+    visibility = ["//visibility:public"],
+)

@@ -1,0 +1,6 @@
+cc_library(
+    name = "ttf2mesh",
+    srcs = ["ttf2mesh.c"],
+    hdrs = ["ttf2mesh.h"],
+    visibility = ["//visibility:public"],
+)

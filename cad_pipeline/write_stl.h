@@ -6,7 +6,7 @@
 #include "visit_helper.h"
 
 AnyGeometry WriteSTL(const AnyGeometry &geometry) {
-  std::print("MakeCube(");
+  std::print("WriteSTL(");
   std::visit(overloaded{
                  [](const std::shared_ptr<BRep> &brep) {
                    std::print("BRep");

@@ -41,6 +41,7 @@ using ConstNumberToken = Token<'N'>;
 using CubeToken = Token<'C'>;
 using WriteToken = Token<'W'>;
 using TriangulateToken = Token<'T'>;
+using MakeCharacterToken = Token<'D'>;
 
 using TokenVariant =
     std::variant<ConstNumberToken, CubeToken, WriteToken, TriangulateToken>;

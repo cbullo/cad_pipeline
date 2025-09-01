@@ -1,3 +1,4 @@
 build --incompatible_enable_cc_toolchain_resolution
 build --enable_workspace
-common --cxxopt="-std=c++23"
+common --cxxopt="-std=c++23" 
+common --host_cxxopt="-std=c++23"

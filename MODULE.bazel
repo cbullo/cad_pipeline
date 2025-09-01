@@ -20,8 +20,8 @@ npm.npm_translate_lock(
     verify_node_modules_ignored = "//:.bazelignore",
     bins = {
         # derived from "bin" attribute in node_modules/http-server/package.json
-        "statikk": [
-            "statikk=./bin/statikk",
+        "http-server": [
+            "http-server=./bin/http-server",
         ],
     },
 )
@@ -42,4 +42,12 @@ http_archive(
     build_file = "//:BUILD.pmp.bazel",
     strip_prefix = "pmp-library-main",
     integrity = "sha256-FdLDP5J2PqILLWclTvPVcjRyUUeQ12CVBcX6TAJZSxI=",
+)
+
+http_archive(
+    name = "ttf2mesh",
+    urls = ["https://github.com/fetisov/ttf2mesh/archive/refs/heads/master.zip"],
+    build_file = "//:BUILD.ttf2mesh.bazel",
+    strip_prefix = "ttf2mesh-master",
+    integrity = "sha256-OMD1UIoGqxPjkmzZWsCC8xjymioosmINmXYd8D+VlTM=",
 )
