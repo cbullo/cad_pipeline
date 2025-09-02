@@ -27,6 +27,8 @@
 
     import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
     let container, stats;
 
     let camera, cameraTarget, scene, renderer;
@@ -38,14 +40,14 @@
       container = document.createElement('div');
       document.body.appendChild(container);
 
-      camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 1, 15);
-      camera.position.set(3, 0.15, 3);
+      camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 1, 1000);
+      camera.position.set(15, 2, 15);
 
-      cameraTarget = new THREE.Vector3(0, - 0.25, 0);
+      cameraTarget = new THREE.Vector3(0, 0, 0);
 
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0x72645b);
-      scene.fog = new THREE.Fog(0x72645b, 2, 15);
+      scene.fog = new THREE.Fog(0x72645b, 20, 95);
 
       // Ground
 
@@ -54,10 +56,11 @@
         new THREE.MeshPhongMaterial({ color: 0xcbcbcb, specular: 0x474747 })
       );
       plane.rotation.x = - Math.PI / 2;
-      plane.position.y = - 8;
+      plane.position.y = -6;
+      plane.receiveShadow = true;
       scene.add(plane);
 
-      plane.receiveShadow = true;
+
 
 
       const urlParams = new URLSearchParams(window.location.search);
@@ -66,27 +69,26 @@
       const loader = new STLLoader();
       loader.load(modelPath, function (geometry) {
 
-        const material = new THREE.MeshPhongMaterial({ color: 0xff9c7c, specular: 0x494949, shininess: 200 });
-        const mesh = new THREE.Mesh(geometry, material);
+      const material = new THREE.MeshPhongMaterial({ color: 0xff9c7c, specular: 0x494949, shininess: 200 });
+      const mesh = new THREE.Mesh(geometry, material);
 
-        mesh.position.set(0, - 0.25, 0.6);
-        mesh.rotation.set(0, - Math.PI / 2, 0);
-        mesh.scale.set(0.5, 0.5, 0.5);
+      mesh.position.set(0, 0, 0.6);
+      mesh.rotation.set(0, - Math.PI / 2, 0);
 
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
 
-        scene.add(mesh);
+      scene.add(mesh);
 
-      });
+    });
 
 
       // Lights
 
       scene.add(new THREE.HemisphereLight(0x8d7c7c, 0x494966, 3));
 
-      addShadowedLight(1, 1, 1, 0xffffff, 3.5);
-      addShadowedLight(0.5, 1, - 1, 0xffd500, 3);
+      addShadowedLight(30, 30, 30, 0xffffff, 3.5);
+      addShadowedLight(15, 30, - 30, 0xffd500, 3);
       // renderer
 
       renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -107,6 +109,23 @@
 
       window.addEventListener('resize', onWindowResize);
 
+
+
+      controls = new OrbitControls( camera, renderer.domElement );
+      controls.listenToKeyEvents( window ); // optional
+
+      controls.addEventListener( 'change', render ); // call this only in static scenes (i.e., if there is no animation loop)
+
+      //controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
+      //controls.dampingFactor = 0.05;
+
+      controls.screenSpacePanning = false;
+
+      controls.minDistance = 10;
+      controls.maxDistance = 50;
+
+      controls.maxPolarAngle = Math.PI / 2;
+
     }
 
     function addShadowedLight(x, y, z, color, intensity) {
@@ -117,14 +136,14 @@
 
       directionalLight.castShadow = true;
 
-      const d = 1;
+      const d = 20;
       directionalLight.shadow.camera.left = - d;
       directionalLight.shadow.camera.right = d;
       directionalLight.shadow.camera.top = d;
       directionalLight.shadow.camera.bottom = - d;
 
       directionalLight.shadow.camera.near = 1;
-      directionalLight.shadow.camera.far = 4;
+      directionalLight.shadow.camera.far = 100;
 
       directionalLight.shadow.bias = - 0.002;
 
@@ -150,10 +169,10 @@
 
       const timer = Date.now() * 0.0005;
 
-      camera.position.x = Math.cos(timer) * 3;
-      camera.position.z = Math.sin(timer) * 3;
+      //camera.position.x = Math.cos(timer) * 15;
+      //camera.position.z = Math.sin(timer) * 15;
 
-      camera.lookAt(cameraTarget);
+      //camera.lookAt(cameraTarget);
 
       renderer.render(scene, camera);
 
