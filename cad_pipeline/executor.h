@@ -10,11 +10,12 @@
 #include "types.h"
 #include "visit_helper.h"
 
-using RuntimeType = std::variant<float, GeomId>;
+using RuntimeType = std::variant<float, char, GeomId>;
 using RuntimeStack = std::stack<RuntimeType>;
 
 std::string NormalizeKey(const GeomId& g) { return g; }
 std::string NormalizeKey(float v) { return std::format("N{:.8f}", v); }
+std::string NormalizeKey(char v) { return std::format("S{}", v); }
 
 // Your target type
 struct MyType {
@@ -58,19 +59,27 @@ struct Op {
 
     auto indexed_lambda = [&runtime_stack,
                            &params]<size_t... I>(std::index_sequence<I...>) {
+      std::println("Called");
       (
           [&runtime_stack, &params]() {
+            if (runtime_stack.empty()) {
+              std::println("Runtime stack is empty! Invalid program.");
+              return;
+            }
             RuntimeType var = runtime_stack.top();
             runtime_stack.pop();
             std::visit(
-                overloaded{[&runtime_stack, &params](
-                               const std::tuple_element_t<I, ParamsTuple>& op) {
-                             std::get<I>(params) = op;
-                           },
-                           [](const auto& n) {
-                             std::println("Incorrect runtime type: {} {}", n,
-                                          I);
-                           }},
+                overloaded{
+                    [&runtime_stack, &params](
+                        const std::tuple_element_t<I, ParamsTuple>& param) {
+                      std::get<I>(params) = param;
+                    },
+                    [](const auto& n) {
+                      std::println(
+                          "Incorrect runtime type: {} {}", typeid(n).name(),
+                          typeid(std::tuple_element_t<I, ParamsTuple>).name());
+                      std::flush(std::cout);
+                    }},
                 var);
           }(),
           ...);
@@ -79,6 +88,7 @@ struct Op {
     indexed_lambda.template operator()<>(ParamsSequence{});
 
     std::string params_key;
+
     std::apply(
         [&params_key](Param const&... tupleArgs) {
           ((params_key.append(NormalizeKey(tupleArgs))), ...);
@@ -111,9 +121,9 @@ class Executor {
 
   void Invoke(const char mnemonic, RuntimeStack& runtime_stack, Cache& cache) {
     auto& op = GetOp(mnemonic);
-
+    std::println("op {}", mnemonic);
     auto key = op.consume_params(runtime_stack, cache);
-    std::println("{}", key);
+    std::println("key {}", key);
     _request_stack.push(key);
     runtime_stack.push(key);
   }
@@ -131,7 +141,7 @@ class Executor {
     std::function<std::string(RuntimeStack&, Cache&)> consume_params;
   };
 
-  InternalOp& GetOp(const char key) { return _ops[key]; }
+  InternalOp& GetOp(const char key) { return _ops.at(key); }
 
   std::unordered_map<char, InternalOp> _ops;
   RuntimeStack _request_stack;

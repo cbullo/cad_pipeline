@@ -37,14 +37,30 @@ struct Token<'N'> {
   }
 };
 
+template <>
+struct Token<'S'> {
+  const static char MnemonicValue = 'S';
+  char value;
+
+  static Token Consume(std::string_view& input) {
+    // Variable to store the parsed float
+    char c = input.front();
+    input.remove_prefix(1);
+    return Token{value : c};
+  }
+};
+
 using ConstNumberToken = Token<'N'>;
 using CubeToken = Token<'C'>;
 using WriteToken = Token<'W'>;
 using TriangulateToken = Token<'T'>;
-using MakeCharacterToken = Token<'D'>;
+using MakeCharacterToken = Token<'L'>;
+//TODO: Not really a string, only a single character is supported
+using StringToken = Token<'S'>;
+using ExtrudeToken = Token<'E'>;
 
-using TokenVariant =
-    std::variant<ConstNumberToken, CubeToken, WriteToken, TriangulateToken>;
+using TokenVariant = std::variant<ConstNumberToken, CubeToken, WriteToken,
+                                  TriangulateToken, MakeCharacterToken, StringToken, ExtrudeToken>;
 
 std::vector<TokenVariant> Parse(const std::string& input) {
   std::string_view input_view(input);
@@ -55,14 +71,21 @@ std::vector<TokenVariant> Parse(const std::string& input) {
       const char key = input.front();
       input.remove_prefix(1);
 
+      bool found = false;
       (
-          [key, &input_view, &tokens]() {
+          [key, &input_view, &tokens, &found]() {
             if (key == T::MnemonicValue) {
+              std::println("Consuming: {}", key);
               const auto& token = T::Consume(input_view);
               tokens.push_back(TokenVariant(token));
+              found = true;
             }
           }(),
           ...);
+
+      if (!found) {
+        std::println("Unknown token: {}", key);
+      }
     };
 
     while (!input_view.empty()) {
@@ -80,6 +103,9 @@ void Process(Executor& exec, const std::vector<TokenVariant>& tokens,
 
   for (const auto& token : tokens) {
     std::visit(overloaded{[&runtime_stack](const ConstNumberToken& n) {
+                            runtime_stack.push(n.value);
+                          },
+                          [&runtime_stack](const StringToken& n) {
                             runtime_stack.push(n.value);
                           },
                           [&exec, &runtime_stack, &cache](const auto& arg) {

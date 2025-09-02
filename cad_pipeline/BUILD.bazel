@@ -8,8 +8,10 @@ cc_library(
         "chamfer.h",
         "cube.h",
         "executor.h",
+        "extrude.h",
         "file_writer.h",
         "interpreter.h",
+        "make_character.h",
         "mesh.h",
         "plane.h",
         "polygon.h",
@@ -20,7 +22,12 @@ cc_library(
         "visit_helper.h",
         "write_stl.h",
     ],
-    deps = ["@pmp", "@ttf2mesh"],
+    deps = [
+        "@boost.geometry",
+        "@earcut",
+        "@pmp",
+        "@ttf2mesh",
+    ],
 )
 
 cc_binary(
