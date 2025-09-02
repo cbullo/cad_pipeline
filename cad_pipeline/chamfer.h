@@ -8,19 +8,7 @@
 #include "brep.h"
 #include "types.h"
 #include "visit_helper.h"
-  for (auto face : in.faces()) {
-    std::vector<pmp::Vertex> face_verts;
-    for (auto he : in.halfedges(face)) {
-      auto ret0 = edges_to_verts.find(he.idx());
-      auto vert = ret0->second[0];
-      face_verts.push_back(pmp::Vertex(vert));
-      std::println("{} ", vert);
-    }
 
-    std::println();
-    out.add_face(face_verts);
-    //break;
-  }
 static inline pmp::Point safe_unit(const pmp::Point& v) {
   pmp::Scalar l = norm(v);
   return (l > pmp::Scalar(0)) ? v / l : pmp::Point(0, 0, 0);
