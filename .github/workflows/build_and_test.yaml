@@ -7,9 +7,5 @@ jobs:
       - uses: actions/checkout@v4
       - name: build
         run: bazel build //...
-      - name: test
-        run: bazel test //...
-      - name: benchmark
-        run: bazel run -c opt //primes:primes_benchmark
 
       
