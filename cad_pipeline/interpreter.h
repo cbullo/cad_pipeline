@@ -58,9 +58,10 @@ using MakeCharacterToken = Token<'L'>;
 //TODO: Not really a string, only a single character is supported
 using StringToken = Token<'S'>;
 using ExtrudeToken = Token<'E'>;
+using ChamferToken = Token<'B'>;
 
 using TokenVariant = std::variant<ConstNumberToken, CubeToken, WriteToken,
-                                  TriangulateToken, MakeCharacterToken, StringToken, ExtrudeToken>;
+                                  TriangulateToken, MakeCharacterToken, StringToken, ExtrudeToken, ChamferToken>;
 
 std::vector<TokenVariant> Parse(const std::string& input) {
   std::string_view input_view(input);
