@@ -48,9 +48,27 @@ std::optional<ttf_outline *> GetGlyphOutline(ttf_t *font, char symbol) {
 internal::polygon_t ConvertToPolygon(ttf_outline *outline) {
   internal::polygon_t poly;
 
-  for (auto i = 0; i < outline->cont[0].length; i++) {
-    const auto &pt = outline->cont[0].pt[i];
-    boost::geometry::append(poly.outer(), internal::point_t(5.f * pt.x, 5.f * pt.y));
+  for (auto ci = 0; ci < outline->ncontours; ++ci) {
+    internal::polygon_t test_poly;
+
+    for (auto i = 0; i < outline->cont[ci].length; i++) {
+      const auto &pt = outline->cont[ci].pt[i];
+      boost::geometry::append(test_poly.outer(),
+                              internal::point_t(5.f * pt.x, 5.f * pt.y));
+    }
+    if (poly.outer().empty()) {
+      poly.outer() = test_poly.outer();
+    } else {
+      if (boost::geometry::within(test_poly, poly.outer())) {
+        //std::reverse(test_poly.outer().begin(), test_poly.outer().end());
+        poly.inners().push_back(test_poly.outer());
+        
+      } else {
+        std::swap(poly.outer(), test_poly.outer());
+        //std::reverse(test_poly.outer().begin(), test_poly.outer().end());
+        poly.inners().push_back(test_poly.outer());
+      }
+    }
   }
 
   return poly;

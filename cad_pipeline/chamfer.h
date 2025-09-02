@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "brep.h"
+#include "pmp/algorithms/normals.h"
 #include "types.h"
 #include "visit_helper.h"
 
@@ -167,6 +168,7 @@ AnyGeometry Chamfer(const AnyGeometry& geometry, float length) {
                    auto mesh = brep->GetTopology();
                    pmp::SurfaceMesh out;
                    ChamferAllEdges(mesh, out, length);
+                   pmp::face_normals(out);
 
                    //  for (auto edge : mesh.edges()) {
                    //    auto v0 = mesh.vertex(edge, 0);
