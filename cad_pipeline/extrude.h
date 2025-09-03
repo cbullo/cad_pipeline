@@ -56,8 +56,8 @@ AnyGeometry Extrude(const AnyGeometry &geometry, const AnyGeometry &polygon,
             auto transformation = pmp::look_at_matrix(face_center, look_at, up);
             transformation = pmp::inverse(transformation);
 
-
-            //TODO: Cheating due to lack of time. Assume all faces are identical.
+            // TODO: Cheating due to lack of time. Assume all faces are
+            // identical.
             for (auto v : extruded.vertices(pmp::Face(0))) {
               auto p = extruded.position(v);
               boost::geometry::append(face_polygon.outer(),
