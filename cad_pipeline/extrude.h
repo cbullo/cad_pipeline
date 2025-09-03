@@ -62,7 +62,7 @@ AnyGeometry Extrude(const AnyGeometry &geometry, const AnyGeometry &polygon,
               boost::geometry::append(face_polygon.outer(),
                                       internal::point_t(p[0], p[1]));
 
-              std::reverse(face_polygon.outer().begin(), face_polygon.outer().end();
+              std::reverse(face_polygon.outer().begin(), face_polygon.outer().end());
             }
 
             std::deque<Polygon> result;
