@@ -6,7 +6,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup compiler
-        uses: aminya/setup-cpp@v1
+        uses: aminya/setup-cpp@v1.7.1
         with:
           vcvarsall: true
           cmake: true
