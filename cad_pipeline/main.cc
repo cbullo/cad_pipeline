@@ -28,8 +28,7 @@ int main() {
   e.Register<ExtrudeOp>();
   e.Register<ChamferOp>();
 
-  ParseAndProcess("N-2.1N0SDLN1.2N5CBETW", e, c);
-  //ParseAndProcess("N1.0N5.0CBTW", e, c);
+  ParseAndProcess("N2.1N0S3LN2.1N4SHLN-2.1N5SHLN2.1N1SDLN-2.1N2S3LN-2.1N3SDLN1.2N5CBEEEEEETW", e, c);
 
   std::println("Finished");
   return 0;

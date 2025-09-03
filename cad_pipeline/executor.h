@@ -17,11 +17,6 @@ std::string NormalizeKey(const GeomId& g) { return g; }
 std::string NormalizeKey(float v) { return std::format("N{:.8f}", v); }
 std::string NormalizeKey(char v) { return std::format("S{}", v); }
 
-// Your target type
-struct MyType {
-  std::string value;
-};
-
 // Customization functor: special-case GeomId, identity for others
 struct Convert {
   // TODO: doesn't work with a reference, why?
@@ -104,6 +99,8 @@ struct Op {
     if (!Cachable || !cache.contains(cache_key)) {
       auto geometry = std::apply(F, callable_params);
       cache[cache_key] = geometry;
+    } else {
+      std::println("Read from cache: {}", cache_key);
     }
 
     return cache_key;

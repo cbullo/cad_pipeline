@@ -60,12 +60,10 @@ internal::polygon_t ConvertToPolygon(ttf_outline *outline) {
       poly.outer() = test_poly.outer();
     } else {
       if (boost::geometry::within(test_poly, poly.outer())) {
-        //std::reverse(test_poly.outer().begin(), test_poly.outer().end());
         poly.inners().push_back(test_poly.outer());
         
       } else {
         std::swap(poly.outer(), test_poly.outer());
-        //std::reverse(test_poly.outer().begin(), test_poly.outer().end());
         poly.inners().push_back(test_poly.outer());
       }
     }

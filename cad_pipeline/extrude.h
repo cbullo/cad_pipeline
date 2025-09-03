@@ -49,15 +49,17 @@ AnyGeometry Extrude(const AnyGeometry &geometry, const AnyGeometry &polygon,
 
             auto look_at = face_center - face_normal;
             auto up = pmp::vec3(0.0, 1.0, 0.0);
-            if (std::fabs(face_normal[1] - up[1]) < 1e-5) {
+            if (std::fabs(1.0 - std::fabs(face_normal[1])) < 1e-5) {
               up = pmp::vec3(1.0, 0.0, 0.0);
             }
 
             auto transformation = pmp::look_at_matrix(face_center, look_at, up);
+            transformation = pmp::inverse(transformation);
 
-            for (auto v : extruded.vertices(pmp::Face(index))) {
+
+            //TODO: Cheating due to lack of time. Assume all faces are identical.
+            for (auto v : extruded.vertices(pmp::Face(0))) {
               auto p = extruded.position(v);
-              //p = pmp::affine_transform(inverse_transformation, p);
               boost::geometry::append(face_polygon.outer(),
                                       internal::point_t(p[0], p[1]));
             }

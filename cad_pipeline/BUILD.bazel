@@ -9,7 +9,6 @@ cc_library(
         "cube.h",
         "executor.h",
         "extrude.h",
-        "file_writer.h",
         "interpreter.h",
         "make_character.h",
         "mesh.h",
