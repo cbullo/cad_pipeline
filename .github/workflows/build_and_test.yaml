@@ -1,7 +1,7 @@
 name: Build and Test
 on: [push]
 jobs:
-  BuildAndTest:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,5 +15,21 @@ jobs:
           compiler: gcc-14
       - name: build
         run: bazel build //...
+      - name: Upload static files as artifact
+        id: deployment
+        uses: actions/upload-pages-artifact@v3 # or specific "vX.X.X" version tag for this action
+        with:
+          path: bazel-bin/frontend/serve.runfiles
+  # Deployment job
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ build.steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4    
 
       
