@@ -7,9 +7,3 @@ I have developed it on Linux (WSL), I didn't have a chance to test it on other s
 - Clone the repository
 - Run this command from the root of the repo:
     `bazel run //frontend:serve`
-## Unit tests
-So far I have only implemented native tests, no wasm testing yet.
-- Run `bazel test //primes:primes_test`
-## Benchmark
-So far I have only implemented native benchmark, no wasm benchmark yet.
-- Run `bazel run //primes:primes_benchmark`
