@@ -96,17 +96,15 @@ struct Op {
 
     GeomId cache_key = std::format("{}{}", params_key, Key);
 
-    // []<typename ...T>(std::tuple<T...>&& p) {
-    //   F(p...);
-    // }(params);
-
     Convert c{};
     auto callable_params = tuple_transform(params, c, cache);
 
     // TODO: Don't call operations here - they should be processed by Planner
     // and Scheduler.
-    auto geometry = std::apply(F, callable_params);
-    cache[cache_key] = geometry;
+    if (!Cachable || !cache.contains(cache_key)) {
+      auto geometry = std::apply(F, callable_params);
+      cache[cache_key] = geometry;
+    }
 
     return cache_key;
   }
