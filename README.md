@@ -5,5 +5,7 @@ I have developed it on Linux (WSL), I didn't have a chance to test it on other s
 - Modern C++ compiler (looks like the default GH Action one is too old, as it doesn't support <print>)
 ## Steps
 - Clone the repository
-- Run this command from the root of the repo:
+- Run this command from the root of the repo to run generate an stl file with the result:
+    `bazel run //cad_pipeline:cad_binary`
+- Or run this command to see a vizualization in a browser:
     `bazel run //frontend:serve`
