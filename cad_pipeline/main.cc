@@ -4,7 +4,6 @@
 #include "extrude.h"
 #include "interpreter.h"
 #include "make_character.h"
-#include "primitives.h"
 #include "triangulate.h"
 #include "write_stl.h"
 

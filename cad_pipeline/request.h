@@ -1,7 +1,10 @@
 #pragma once
 
-struct Request {
-  GeomId id;
-  std::vector<RuntimeType> params;
-  std::function<void()> op;
-};
+
+// TODO: Not implemented yet
+
+// struct Request {
+//   GeomId id;
+//   std::vector<RuntimeType> params;
+//   std::function<void()> op;
+// };
