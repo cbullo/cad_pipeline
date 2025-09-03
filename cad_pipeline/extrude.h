@@ -53,9 +53,7 @@ AnyGeometry Extrude(const AnyGeometry &geometry, const AnyGeometry &polygon,
               up = pmp::vec3(1.0, 0.0, 0.0);
             }
 
-            //auto transformation = pmp::look_at_matrix(face_center, look_at, up);
             auto transformation = pmp::look_at_matrix(face_center, look_at, up);
-            auto inverse_transformation = pmp::inverse(transformation);
 
             for (auto v : extruded.vertices(pmp::Face(index))) {
               auto p = extruded.position(v);
@@ -78,8 +76,6 @@ AnyGeometry Extrude(const AnyGeometry &geometry, const AnyGeometry &polygon,
             // and add faces around hole
             int r = 0;
             for (const auto &p : result) {
-              // const auto &p = result[0];
-
               std::vector<internal::point_t> concatenated_points;
               // Add 'base' faces
               std::vector<std::vector<internal::point_t>> earcut_polygon;

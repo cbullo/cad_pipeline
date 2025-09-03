@@ -105,10 +105,8 @@ void ChamferAllEdges(const pmp::SurfaceMesh& in, pmp::SurfaceMesh& out,
       auto ret0 = edges_to_verts.find(he.idx());
       auto vert = ret0->second[0];
       face_verts.push_back(pmp::Vertex(vert));
-      std::println("{} ", vert);
     }
 
-    std::println();
     out.add_face(face_verts);
     // break;
   }
@@ -123,40 +121,21 @@ void ChamferAllEdges(const pmp::SurfaceMesh& in, pmp::SurfaceMesh& out,
     auto ret0 = edges_to_verts.find(he0.idx());
     for (auto it : ret0->second) {
       auto vert = it;
-      // td::print(" {}", vert);
       edge_verts.push_back(pmp::Vertex(vert));
     }
 
     auto ret1 = edges_to_verts.find(he1.idx());
     for (auto it : ret1->second) {
       auto vert = it;
-      // std::print(" {}", vert);
       edge_verts.push_back(pmp::Vertex(vert));
     }
 
-    // std::println();
-    // out.add_face({pmp::Vertex(10), pmp::Vertex(9), pmp::Vertex(6),
-    // pmp::Vertex(8)});
     out.add_face(edge_verts);
-    // break;
   }
 
   for (auto cf : corner_faces) {
     out.add_face(cf);
   }
-
-  // for (auto face : in.faces()) {
-  //   std::vector<pmp::Vertex> face_verts;
-  //   auto ret = faces_to_verts.equal_range(face.idx());
-  //   for (auto it = ret.first; it != ret.second; ++it) {
-  //     auto vert = it->second;
-  //     std::print(" {}", vert);
-  //     face_verts.push_back(pmp::Vertex(vert));
-  //   }
-  //   std::println();
-  //   out.add_face(face_verts);
-  //   //break;
-  // }
 }
 
 AnyGeometry Chamfer(const AnyGeometry& geometry, float length) {
@@ -169,31 +148,6 @@ AnyGeometry Chamfer(const AnyGeometry& geometry, float length) {
                    pmp::SurfaceMesh out;
                    ChamferAllEdges(mesh, out, length);
                    pmp::face_normals(out);
-
-                   //  for (auto edge : mesh.edges()) {
-                   //    auto v0 = mesh.vertex(edge, 0);
-                   //    auto v1 = mesh.vertex(edge, 1);
-
-                   //    auto f0 = mesh.face(mesh.halfedge(edge, 0));
-                   //    auto f1 = mesh.face(mesh.halfedge(edge, 1));
-
-                   //    auto n0 = pmp::face_normal(mesh, f0);
-                   //    auto n1 = pmp::face_normal(mesh, f1);
-
-                   //    auto n = n0 + n1;
-                   //    n = pmp::normalize(n);
-
-                   //    const auto &v_halfedges0 = mesh.halfedges(v0);
-                   //    const auto &v_halfedges1 = mesh.halfedges(v1);
-
-                   //    for (auto he : v_halfedges0) {
-                   //      if (mesh.to_vertex(he) == v1) {
-                   //        continue;
-                   //      }
-                   //    }
-
-                   //    break;
-                   //  }
 
                    return AnyGeometry(std::make_shared<BRep>(out));
                  },

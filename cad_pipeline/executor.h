@@ -59,7 +59,6 @@ struct Op {
 
     auto indexed_lambda = [&runtime_stack,
                            &params]<size_t... I>(std::index_sequence<I...>) {
-      std::println("Called");
       (
           [&runtime_stack, &params]() {
             if (runtime_stack.empty()) {
@@ -121,9 +120,7 @@ class Executor {
 
   void Invoke(const char mnemonic, RuntimeStack& runtime_stack, Cache& cache) {
     auto& op = GetOp(mnemonic);
-    std::println("op {}", mnemonic);
     auto key = op.consume_params(runtime_stack, cache);
-    std::println("key {}", key);
     _request_stack.push(key);
     runtime_stack.push(key);
   }

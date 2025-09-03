@@ -76,7 +76,6 @@ std::vector<TokenVariant> Parse(const std::string& input) {
       (
           [key, &input_view, &tokens, &found]() {
             if (key == T::MnemonicValue) {
-              std::println("Consuming: {}", key);
               const auto& token = T::Consume(input_view);
               tokens.push_back(TokenVariant(token));
               found = true;
