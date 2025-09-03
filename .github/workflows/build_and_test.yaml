@@ -12,7 +12,7 @@ jobs:
           cmake: true
           ninja: true
           bazel: true
-          compiler: gcc-15
+          compiler: gcc-14
       - name: build
         run: bazel build //...
 
