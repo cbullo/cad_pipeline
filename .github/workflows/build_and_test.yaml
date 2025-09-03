@@ -19,7 +19,7 @@ jobs:
         id: deployment
         uses: actions/upload-pages-artifact@v3 # or specific "vX.X.X" version tag for this action
         with:
-          path: bazel-bin/frontend/serve.runfiles
+          path: bazel-out/k8-fastbuild/bin/frontend/serve_/serve.runfiles/_main/frontend
   # Deployment job
   deploy:
     environment:
