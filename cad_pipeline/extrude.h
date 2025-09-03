@@ -54,6 +54,7 @@ AnyGeometry Extrude(const AnyGeometry &geometry, const AnyGeometry &polygon,
             }
 
             auto transformation = pmp::look_at_matrix(face_center, look_at, up);
+            transformation = pmp::translation_matrix(face_center) * transformation;
 
             for (auto v : extruded.vertices(pmp::Face(index))) {
               auto p = extruded.position(v);
