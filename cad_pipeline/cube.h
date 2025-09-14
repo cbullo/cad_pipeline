@@ -13,8 +13,12 @@ AnyGeometry MakeCube(float half_extent) {
   std::println("MakeCube({})", half_extent);
   auto cube = pmp::hexahedron();
   
+
   for (const auto& v : cube.vertices()) {
     cube.position(v) *= sqrtf(3.f) * half_extent;
+    if ((6.f - half_extent) < 0.001){
+      cube.position(v) += pmp::Point(3.f, 3.f, 3.f);
+    }
   }
 
   pmp::face_normals(cube);

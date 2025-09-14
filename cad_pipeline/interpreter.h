@@ -52,16 +52,20 @@ struct Token<'S'> {
 
 using ConstNumberToken = Token<'N'>;
 using CubeToken = Token<'C'>;
-using WriteToken = Token<'W'>;
+using WriteSTLToken = Token<'W'>;
 using TriangulateToken = Token<'T'>;
 using MakeCharacterToken = Token<'L'>;
-//TODO: Not really a string, only a single character is supported
+// TODO: Not really a string, only a single character is supported
 using StringToken = Token<'S'>;
 using ExtrudeToken = Token<'E'>;
 using ChamferToken = Token<'B'>;
+using DistanceToken = Token<'D'>;
+using WritePLYToken = Token<'P'>;
 
-using TokenVariant = std::variant<ConstNumberToken, CubeToken, WriteToken,
-                                  TriangulateToken, MakeCharacterToken, StringToken, ExtrudeToken, ChamferToken>;
+using TokenVariant =
+    std::variant<ConstNumberToken, CubeToken, WriteSTLToken, WritePLYToken,
+                 TriangulateToken, MakeCharacterToken, StringToken,
+                 ExtrudeToken, ChamferToken, DistanceToken>;
 
 std::vector<TokenVariant> Parse(const std::string& input) {
   std::string_view input_view(input);

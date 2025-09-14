@@ -13,9 +13,9 @@
 using RuntimeType = std::variant<float, char, GeomId>;
 using RuntimeStack = std::stack<RuntimeType>;
 
-std::string NormalizeKey(const GeomId& g) { return g; }
-std::string NormalizeKey(float v) { return std::format("N{:.8f}", v); }
-std::string NormalizeKey(char v) { return std::format("S{}", v); }
+inline std::string NormalizeKey(const GeomId& g) { return g; }
+inline std::string NormalizeKey(float v) { return std::format("N{:.8f}", v); }
+inline std::string NormalizeKey(char v) { return std::format("S{}", v); }
 
 // Customization functor: special-case GeomId, identity for others
 struct Convert {
@@ -113,6 +113,8 @@ class Executor {
  public:
   using RuntimeType = ::RuntimeType;
 
+  Executor();
+
   void Invoke(const char mnemonic, RuntimeStack& runtime_stack, Cache& cache) {
     auto& op = GetOp(mnemonic);
     auto key = op.consume_params(runtime_stack, cache);
@@ -129,6 +131,7 @@ class Executor {
   }
 
  private:
+
   struct InternalOp {
     std::function<std::string(RuntimeStack&, Cache&)> consume_params;
   };
@@ -137,4 +140,5 @@ class Executor {
 
   std::unordered_map<char, InternalOp> _ops;
   RuntimeStack _request_stack;
+  //WGPUQueue queue;
 };

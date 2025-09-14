@@ -1,0 +1,27 @@
+load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
+
+exports_files(["triangle.h", "CMakeLists.txt"])
+
+filegroup(
+    name = "all_srcs",
+    srcs = glob(["**/*"]),
+    visibility = ["//visibility:public"],
+)
+
+cmake(
+    name = "triangle",
+    copts = [
+        "-fPIC",
+    ],
+    generate_args = ["-DBUILD_LIBRARY=ON"],
+    install = False,
+    lib_name = "triangle",
+    lib_source = "@triangle//:all_srcs",
+    out_include_dir = "",
+    out_lib_dir = "",
+    out_static_libs = ["libtriangle.a"],
+    postfix_script = """
+        cp $$EXT_BUILD_ROOT/external/+_repo_rules+triangle/triangle.h ./libtriangle.a $$INSTALLDIR
+    """,
+    visibility = ["//visibility:public"],
+)

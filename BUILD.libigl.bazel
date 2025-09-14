@@ -1,0 +1,54 @@
+load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
+
+filegroup(
+    name = "all_srcs",
+    srcs = glob(["**/*"]),
+    visibility = ["//visibility:public"],
+)
+
+cmake(
+    name = "libigl",
+    build_data = [
+        "@triangle//:all_srcs",
+        "@triangle//:CMakeLists.txt",
+    ],
+    env = {
+        "TRIANGLE_SRC": "$(location @triangle//:CMakeLists.txt)/..",
+        "EIGEN_SRC": "external/eigen+",
+    },
+    generate_args = [
+        "-G Ninja",
+        "-DFETCHCONTENT_FULLY_DISCONNECTED=ON",
+        "-DFETCHCONTENT_QUIET=OFF",
+        "-DBUILD_SHARED_LIBS=OFF",
+        "-DFETCHCONTENT_SOURCE_DIR_EIGEN=$EXT_BUILD_ROOT/$EIGEN_SRC",
+        "-DFETCHCONTENT_SOURCE_DIR_TRIANGLE=$EXT_BUILD_ROOT/$TRIANGLE_SRC",
+        "-DLIBIGL_WITHOUT_COPYLEFT=ON",
+        "-DLIBIGL_USE_STATIC_LIBRARY=OFF",
+        "-DLIBIGL_BUILD_TESTS=OFF",
+        "-DLIBIGL_BUILD_TUTORIALS=OFF",
+        "-DLIBIGL_COPYLEFT_CGAL=OFF",
+        "-DLIBIGL_COPYLEFT_COMISO=OFF",
+        "-DLIBIGL_RESTRICTED_MATLAB=OFF",
+        "-DLIBIGL_RESTRICTED_MOSEK=OFF",
+        "-DLIBIGL_RESTRICTED_TRIANGLE=ON",
+        "-DLIBIGL_EMBREE=OFF",
+        "-DLIBIGL_OPENGL=OFF",
+        "-DLIBIGL_XML=OFF",
+        "-DLIBIGL_PNG=OFF",
+        "-DLIBIGL_GLFW=OFF",
+        "-DLIBIGL_IMGUI=OFF",
+        "-DLIBIGL_SPECTRA=OFF",
+        "-DLIBIGL_STB=OFF",
+        "-DLIBIGL_PREDICATES=OFF",
+        "-DLIBIGL_COPYLEFT_TETGEN=OFF",
+    ],
+    lib_source = "@libigl//:all_srcs",
+    visibility = ["//visibility:public"],
+    out_headers_only = True,
+    install = True,
+    out_static_libs = ["libtriangle.a"],
+    deps = [
+        "@eigen",
+    ],
+)

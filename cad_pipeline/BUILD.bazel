@@ -1,12 +1,17 @@
 cc_library(
     name = "cad_pipeline",
     srcs = [
+        "distance_map.cc",
+        "executor.cc",
+        "flatten_surface_mesh.cc",
+        "write_ply.cc",
     ],
     hdrs = [
         "brep.h",
         "cache.h",
         "chamfer.h",
         "cube.h",
+        "distance_map.h",
         "executor.h",
         "extrude.h",
         "interpreter.h",
@@ -16,13 +21,16 @@ cc_library(
         "triangulate.h",
         "types.h",
         "visit_helper.h",
+        "write_ply.h",
         "write_stl.h",
     ],
     deps = [
         "@boost.geometry",
         "@earcut",
+        "@libigl",
         "@pmp",
         "@ttf2mesh",
+        "@wgpu",
     ],
 )
 

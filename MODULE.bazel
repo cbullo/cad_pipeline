@@ -53,3 +53,26 @@ http_archive(
     strip_prefix = "ttf2mesh-master",
     integrity = "sha256-OMD1UIoGqxPjkmzZWsCC8xjymioosmINmXYd8D+VlTM=",
 )
+
+http_archive(
+    name = "wgpu",
+    urls = ["https://github.com/gfx-rs/wgpu-native/releases/download/v25.0.2.2/wgpu-linux-x86_64-release.zip"],
+    build_file = "//:BUILD.wgpu.bazel",
+    integrity = "sha256-eKKk2Q86CmevKrJjT+CYc87Tus6siCLokM3qNNi6mDQ=",
+)
+
+http_archive(
+    name = "libigl",
+    urls = ["https://github.com/libigl/libigl/archive/refs/tags/v2.6.0.tar.gz"],
+    build_file = "//:BUILD.libigl.bazel",
+    strip_prefix = "libigl-2.6.0",
+    integrity = "sha256-/jv1hXHMy+93SUcmEoTM9rf98E/KtfcYHjGTHkKgsU8=",
+)
+
+http_archive(
+    name = "triangle",
+    build_file = "//:BUILD.triangle.bazel",
+    strip_prefix = "triangle-master",
+    urls = ["https://github.com/libigl/triangle/archive/master.tar.gz"],
+    integrity = "sha256-yO48ASsne4Cn7CGMNBJm8Vg6aHTanJhOqoMzP8LhrXA=",
+)
