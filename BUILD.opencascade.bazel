@@ -1,0 +1,20 @@
+load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
+
+filegroup(
+    name = "all_srcs",
+    srcs = glob(["**/*"]),
+    visibility = ["//visibility:public"],
+)
+
+cmake(
+    name = "opencascade",
+    generate_args = [
+        "-G Ninja",
+        "-DUSE_TK=OFF",
+        "-DUSE_TCL=OFF",
+        "-DUSE_FREETYPE=OFF",
+        "-DBUILD_MODULE_Draw=OFF"
+    ],
+    lib_source = "@opencascade//:all_srcs",
+    visibility = ["//visibility:public"],
+)

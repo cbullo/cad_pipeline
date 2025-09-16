@@ -53,3 +53,11 @@ http_archive(
     strip_prefix = "ttf2mesh-master",
     integrity = "sha256-OMD1UIoGqxPjkmzZWsCC8xjymioosmINmXYd8D+VlTM=",
 )
+
+http_archive(
+    name = "opencascade",
+    urls = ["https://github.com/Open-Cascade-SAS/OCCT/archive/refs/tags/V8_0_0_rc2.tar.gz"],
+    build_file = "//:BUILD.opencascade.bazel",
+    strip_prefix = "OCCT-8_0_0_rc2",
+    integrity = "sha256-HY2Zus5F61JP+bmjLeGUOWxDE8ESed5mpGBK0071TqE=",
+)
