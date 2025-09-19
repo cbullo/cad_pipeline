@@ -40,13 +40,13 @@ Executor::Executor() {
   // WGPUQueue queue = wgpuDeviceGetQueue(device);
   // assert(queue);
 
-  // WGPUBuffer index_buffer = frmwrk_device_create_buffer_init(
-  //     device, &(const WGPUBufferDescriptor){
-  //                      .label = {"index_buffer", WGPU_STRLEN},
-  //                      .content = (void *)indices,
-  //                      .content_size = indices_size,
-  //                      .usage = WGPUBufferUsage_Index,
-  //                  });
+  // WGPUBuffer index_buffer =
+  //     wgpuDeviceCreateBuffer(device, &(const WGPUBufferDescriptor){
+  //                                        .label = {"index_buffer", WGPU_STRLEN},
+  //                                        .usage = WGPUBufferUsage_Index,
+  //                                        .size = indices_size,
+  //                                        .mappedAtCreation = false,
+  //                                    });
   // assert(index_buffer);
 
   // WGPUBuffer staging_buffer = wgpuDeviceCreateBuffer(
@@ -57,4 +57,18 @@ Executor::Executor() {
   //                 .mappedAtCreation = false,
   //             });
   // assert(staging_buffer);
+
+
+  // wgpuDeviceCreateShaderModule(device, &(const WGPUShaderModuleDescriptor){
+  //                 .label = {name, WGPU_STRLEN},
+  //                 .nextInChain =
+  //                     (const WGPUChainedStruct *)&(
+  //                         const WGPUShaderSourceWGSL){
+  //                         .chain =
+  //                             (const WGPUChainedStruct){
+  //                                 .sType = WGPUSType_ShaderSourceWGSL,
+  //                             },
+  //                         .code = {shader_value, WGPU_STRLEN},
+  //                     },
+  //             });
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "any_geometry.h"
 #include "types.h"
 
 AnyGeometry DistanceMap(const AnyGeometry &geometry1,

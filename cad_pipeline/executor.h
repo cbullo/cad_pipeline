@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <variant>
 
+#include "any_geometry.h"
 #include "cache.h"
 #include "types.h"
 #include "visit_helper.h"
@@ -131,7 +132,6 @@ class Executor {
   }
 
  private:
-
   struct InternalOp {
     std::function<std::string(RuntimeStack&, Cache&)> consume_params;
   };
@@ -140,5 +140,5 @@ class Executor {
 
   std::unordered_map<char, InternalOp> _ops;
   RuntimeStack _request_stack;
-  //WGPUQueue queue;
+  // WGPUQueue queue;
 };

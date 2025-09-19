@@ -21,7 +21,7 @@ AnyGeometry WriteSTL(const AnyGeometry &geometry) {
                    pmp::write_stl(surf_mesh, "out.stl",
                                   pmp::IOFlags{use_face_normals : false});
                  },
-                 [](const std::shared_ptr<Polygon> &brep) {
+                 [](const auto &brep) {
 
                  },
              },

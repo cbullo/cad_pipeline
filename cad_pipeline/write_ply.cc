@@ -58,7 +58,7 @@ AnyGeometry WritePLY(const AnyGeometry &geometry) {
 
                    igl::writePLY("out.ply", V, F, N, UV, VD, VDheader);
                  },
-                 [](const std::shared_ptr<Polygon> &brep) {
+                 [](const auto &brep) {
 
                  },
              },
