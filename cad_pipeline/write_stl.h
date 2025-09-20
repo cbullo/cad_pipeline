@@ -5,7 +5,8 @@
 #include "types.h"
 #include "visit_helper.h"
 
-AnyGeometry WriteSTL(const AnyGeometry &geometry) {
+AnyGeometry WriteSTL(ExecutionContext &execution_context,
+                     const AnyGeometry &geometry) {
   std::print("WriteSTL(");
   std::visit(overloaded{
                  [](const std::shared_ptr<BRep> &brep) {
@@ -19,7 +20,7 @@ AnyGeometry WriteSTL(const AnyGeometry &geometry) {
                    std::flush(std::cout);
                    const auto &surf_mesh = *mesh;
                    pmp::write_stl(surf_mesh, "out.stl",
-                                  pmp::IOFlags{use_face_normals : false});
+                                  pmp::IOFlags{.use_face_normals = false});
                  },
                  [](const auto &brep) {
 

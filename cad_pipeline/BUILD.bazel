@@ -1,7 +1,7 @@
 cc_library(
     name = "cad_pipeline",
     srcs = [
-        "distance_map.cc",
+        #"distance_map.cc",
         "executor.cc",
         "flatten_surface_mesh.cc",
         "sdf_draw.cc",
@@ -13,7 +13,7 @@ cc_library(
         "cache.h",
         "chamfer.h",
         "cube.h",
-        "distance_map.h",
+        #"distance_map.h",
         "executor.h",
         "extrude.h",
         "interpreter.h",
@@ -21,6 +21,7 @@ cc_library(
         "mesh.h",
         "polygon.h",
         "sdf_draw.h",
+        "sdf_shapes.h",
         "triangulate.h",
         "types.h",
         "visit_helper.h",
@@ -30,6 +31,7 @@ cc_library(
     additional_compiler_inputs = ["shaders/sdf.template.wgsl"],
     cxxopts = ["--embed-dir=cad_pipeline/shaders/"],
     deps = [
+        "@boost.algorithm",
         "@boost.geometry",
         "@earcut",
         "@libigl",

@@ -7,7 +7,7 @@
 #include "types.h"
 #include "visit_helper.h"
 
-AnyGeometry Triangulate(const AnyGeometry &geometry) {
+AnyGeometry Triangulate(ExecutionContext& execution_context, const AnyGeometry &geometry) {
   std::print("Triangulate(");
   return std::visit(
       overloaded{[](const std::shared_ptr<BRep> &brep) {
@@ -26,7 +26,7 @@ AnyGeometry Triangulate(const AnyGeometry &geometry) {
                    std::flush(std::cout);
                    return geometry;
                  },
-                 [&geometry](const std::shared_ptr<Polygon> &polygon) {
+                 [](const std::shared_ptr<Polygon> &polygon) {
                    std::println("Polygon)");
                    std::flush(std::cout);
 

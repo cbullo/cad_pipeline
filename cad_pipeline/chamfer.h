@@ -7,6 +7,7 @@
 
 #include "any_geometry.h"
 #include "brep.h"
+#include "cache.h"
 #include "pmp/algorithms/normals.h"
 #include "types.h"
 #include "visit_helper.h"
@@ -141,7 +142,8 @@ void ChamferAllEdges(const pmp::SurfaceMesh& in, pmp::SurfaceMesh& out,
   }
 }
 
-AnyGeometry Chamfer(const AnyGeometry& geometry, float length) {
+AnyGeometry Chamfer(ExecutionContext& execution_context,
+                    const AnyGeometry& geometry, float length) {
   std::print("Chamfer({}, ", length);
   return std::visit(
       overloaded{[length](const std::shared_ptr<BRep>& brep) {

@@ -10,7 +10,7 @@
 #include "types.h"
 #include "visit_helper.h"
 
-AnyGeometry WritePLY(const AnyGeometry &geometry) {
+AnyGeometry WritePLY(ExecutionContext& execution_context, const AnyGeometry &geometry) {
   std::print("WritePLY(");
   std::visit(overloaded{
                  [](const std::shared_ptr<BRep> &brep) { std::print("BRep"); },

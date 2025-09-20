@@ -4,6 +4,7 @@ bazel_dep(name = "aspect_rules_js", version = "2.2.0")
 bazel_dep(name = "rules_foreign_cc", version = "0.14.0")
 bazel_dep(name = "eigen", version = "4.0.0-20241125.bcr.2")
 bazel_dep(name = "boost.geometry", version = "1.87.0")
+bazel_dep(name = "boost.algorithm", version = "1.87.0")
 bazel_dep(name = "earcut", version = "2.2.4")
 
 ####### Node.js version #########
@@ -35,7 +36,6 @@ pnpm = use_extension("@aspect_rules_js//npm:extensions.bzl", "pnpm")
 # Allows developers to use the matching pnpm version, for example:
 # bazel run -- @pnpm --dir /home/runner/work/rules_js/rules_js install
 use_repo(pnpm, "pnpm")
-
 
 http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 http_archive(

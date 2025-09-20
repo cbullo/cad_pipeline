@@ -4,25 +4,27 @@
 #include <memory>
 #include <print>
 
+#include "Eigen/Core"
 #include "brep.h"
+#include "cache.h"
 #include "pmp/algorithms/normals.h"
 #include "pmp/algorithms/shapes.h"
 #include "types.h"
 
-struct Cube {
-  Eigen::Vector3f half_extent;
-};
+inline std::shared_ptr<Cube> MakeCube(ExecutionContext& execution_context,
+                                      float half_extents) {
+  // std::println("MakeCube({})", half_extents);
+  // auto cube = pmp::hexahedron();
 
-inline std::shared_ptr<BRep> MakeCube(float half_extent) {
-  std::println("MakeCube({})", half_extent);
-  auto cube = pmp::hexahedron();
+  // for (const auto& v : cube.vertices()) {
+  //   cube.position(v) *= sqrtf(3.f) * half_extents;
+  // }
 
-  for (const auto& v : cube.vertices()) {
-    cube.position(v) *= sqrtf(3.f) * half_extent;
-  }
+  // pmp::face_normals(cube);
+  // return std::make_shared<BRep>(cube);
 
-  pmp::face_normals(cube);
-  return std::make_shared<BRep>(cube);
+  return std::make_shared<Cube>(Cube{.half_extents =
+                  Eigen::Vector3f(half_extents, half_extents, half_extents)});
 }
 
 template <typename Shape>

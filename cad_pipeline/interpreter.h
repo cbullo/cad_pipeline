@@ -33,7 +33,7 @@ struct Token<'N'> {
     } else {
       // TODO: error handling
     }
-    return Token{value : f};
+    return Token{.value = f};
   }
 };
 
@@ -46,7 +46,7 @@ struct Token<'S'> {
     // Variable to store the parsed float
     char c = input.front();
     input.remove_prefix(1);
-    return Token{value : c};
+    return Token{.value = c};
   }
 };
 
@@ -61,11 +61,12 @@ using ExtrudeToken = Token<'E'>;
 using ChamferToken = Token<'B'>;
 using DistanceToken = Token<'D'>;
 using WritePLYToken = Token<'P'>;
+using SDFDrawToken = Token<'F'>;
 
 using TokenVariant =
     std::variant<ConstNumberToken, CubeToken, WriteSTLToken, WritePLYToken,
                  TriangulateToken, MakeCharacterToken, StringToken,
-                 ExtrudeToken, ChamferToken, DistanceToken>;
+                 ExtrudeToken, ChamferToken, DistanceToken, SDFDrawToken>;
 
 std::vector<TokenVariant> Parse(const std::string& input) {
   std::string_view input_view(input);
@@ -102,7 +103,7 @@ std::vector<TokenVariant> Parse(const std::string& input) {
 
 template <typename Executor>
 void Process(Executor& exec, const std::vector<TokenVariant>& tokens,
-             Cache& cache) {
+             ExecutionContext& context) {
   std::stack<typename Executor::RuntimeType> runtime_stack;
 
   for (const auto& token : tokens) {
@@ -112,10 +113,10 @@ void Process(Executor& exec, const std::vector<TokenVariant>& tokens,
                           [&runtime_stack](const StringToken& n) {
                             runtime_stack.push(n.value);
                           },
-                          [&exec, &runtime_stack, &cache](const auto& arg) {
+                          [&exec, &runtime_stack, &context](const auto& arg) {
                             exec.Invoke(
                                 std::decay_t<decltype(arg)>::MnemonicValue,
-                                runtime_stack, cache);
+                                runtime_stack, context);
                           }},
                token);
   }
@@ -123,7 +124,7 @@ void Process(Executor& exec, const std::vector<TokenVariant>& tokens,
 
 template <typename Executor>
 auto ParseAndProcess(const std::string& input, Executor& executor,
-                     Cache& cache) {
+                     ExecutionContext& context) {
   const auto& tokens = Parse(input);
-  Process(executor, tokens, cache);
+  Process(executor, tokens, context);
 }

@@ -61,7 +61,7 @@ internal::polygon_t ConvertToPolygon(ttf_outline *outline) {
     } else {
       if (boost::geometry::within(test_poly, poly.outer())) {
         poly.inners().push_back(test_poly.outer());
-        
+
       } else {
         std::swap(poly.outer(), test_poly.outer());
         poly.inners().push_back(test_poly.outer());
@@ -72,7 +72,8 @@ internal::polygon_t ConvertToPolygon(ttf_outline *outline) {
   return poly;
 }
 
-AnyGeometry MakeCharacterPolygon(char symbol) {
+AnyGeometry MakeCharacterPolygon(ExecutionContext &execution_context,
+                                 char symbol) {
   std::println("MakeCharacterPolygon({})", symbol);
   std::flush(std::cout);
   auto font = LoadSystemFont();

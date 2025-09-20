@@ -18,27 +18,31 @@ inline std::string NormalizeKey(const GeomId& g) { return g; }
 inline std::string NormalizeKey(float v) { return std::format("N{:.8f}", v); }
 inline std::string NormalizeKey(char v) { return std::format("S{}", v); }
 
+
 // Customization functor: special-case GeomId, identity for others
 struct Convert {
   // TODO: doesn't work with a reference, why?
-  AnyGeometry operator()(/*const*/ GeomId /*&*/ id, Cache& cache) const {
-    return cache.at(id);
+  AnyGeometry operator()(/*const*/ GeomId /*&*/ id,
+                         ExecutionContext& execution_context) const {
+    return execution_context.cache.at(id);
   }
 
   template <class T>
-  constexpr T operator()(T&& x, Cache&) const noexcept {
+  constexpr T operator()(T&& x, ExecutionContext&) const noexcept {
     return std::forward<T>(x);  // identity
   }
 };
 
 // Generic tuple transform (C++17)
 template <class F, class Tuple>
-auto tuple_transform(Tuple&& tup, F&& f, Cache& cache) {
+auto tuple_transform(Tuple&& tup, F&& f, ExecutionContext& execution_context) {
   return std::apply(
       [&](auto&&... xs) {
-        return std::tuple<std::decay_t<decltype(f(
-            std::forward<decltype(xs)>(xs), cache))>...>{
-            f(std::forward<decltype(xs)>(xs), cache)...};
+        return std::tuple<ExecutionContext&, std::decay_t<decltype(f(
+                                                 std::forward<decltype(xs)>(xs),
+                                                 execution_context))>...>{
+            execution_context,
+            f(std::forward<decltype(xs)>(xs), execution_context)...};
       },
       std::forward<Tuple>(tup));
 }
@@ -48,7 +52,8 @@ struct Op {
   static const char keyValue = Key;
   using ParamsTuple = std::tuple<Param...>;
 
-  static std::string ConsumeParams(RuntimeStack& runtime_stack, Cache& cache) {
+  static std::string ConsumeParams(RuntimeStack& runtime_stack,
+                                   ExecutionContext& execution_context) {
     using ParamsSequence = std::index_sequence_for<Param...>;
 
     ParamsTuple params;
@@ -65,7 +70,7 @@ struct Op {
             runtime_stack.pop();
             std::visit(
                 overloaded{
-                    [&runtime_stack, &params](
+                    [&params](
                         const std::tuple_element_t<I, ParamsTuple>& param) {
                       std::get<I>(params) = param;
                     },
@@ -73,7 +78,6 @@ struct Op {
                       std::println(
                           "Incorrect runtime type: {} {}", typeid(n).name(),
                           typeid(std::tuple_element_t<I, ParamsTuple>).name());
-                      std::flush(std::cout);
                     }},
                 var);
           }(),
@@ -93,13 +97,13 @@ struct Op {
     GeomId cache_key = std::format("{}{}", params_key, Key);
 
     Convert c{};
-    auto callable_params = tuple_transform(params, c, cache);
+    auto callable_params = tuple_transform(params, c, execution_context);
 
     // TODO: Don't call operations here - they should be processed by Planner
     // and Scheduler.
-    if (!Cachable || !cache.contains(cache_key)) {
+    if (!Cachable || !execution_context.cache.contains(cache_key)) {
       auto geometry = std::apply(F, callable_params);
-      cache[cache_key] = geometry;
+      execution_context.cache[cache_key] = geometry;
     } else {
       std::println("Read from cache: {}", cache_key);
     }
@@ -116,9 +120,10 @@ class Executor {
 
   Executor();
 
-  void Invoke(const char mnemonic, RuntimeStack& runtime_stack, Cache& cache) {
+  void Invoke(const char mnemonic, RuntimeStack& runtime_stack,
+              ExecutionContext& execution_context) {
     auto& op = GetOp(mnemonic);
-    auto key = op.consume_params(runtime_stack, cache);
+    auto key = op.consume_params(runtime_stack, execution_context);
     _request_stack.push(key);
     runtime_stack.push(key);
   }
@@ -133,7 +138,7 @@ class Executor {
 
  private:
   struct InternalOp {
-    std::function<std::string(RuntimeStack&, Cache&)> consume_params;
+    std::function<std::string(RuntimeStack&, ExecutionContext&)> consume_params;
   };
 
   InternalOp& GetOp(const char key) { return _ops.at(key); }

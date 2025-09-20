@@ -20,7 +20,8 @@ struct nth<1, internal::point_t> {
 }  // namespace util
 }  // namespace mapbox
 
-AnyGeometry Extrude(const AnyGeometry &geometry, const AnyGeometry &polygon,
+AnyGeometry Extrude(ExecutionContext &execution_context,
+                    const AnyGeometry &geometry, const AnyGeometry &polygon,
                     float face_index, float depth) {
   std::print("Extrude({}, ", face_index);
   return std::visit(
