@@ -6,6 +6,7 @@ cc_library(
         "flatten_surface_mesh.cc",
         "sdf_draw.cc",
         "write_ply.cc",
+        "device_wgpu.cc",
     ],
     hdrs = [
         "any_geometry.h",
@@ -13,6 +14,7 @@ cc_library(
         "cache.h",
         "chamfer.h",
         "cube.h",
+        "device_wgpu.h",
         #"distance_map.h",
         "executor.h",
         "extrude.h",

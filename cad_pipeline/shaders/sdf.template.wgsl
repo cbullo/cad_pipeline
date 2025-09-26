@@ -4,6 +4,10 @@ var<storage, read_write> v_internal_indices: array<vec4<f32>>;
 @group(0)
 @binding(1)
 var<storage, read_write> v_boundary_indices: array<vec4<f32>>;
+@group(0)
+@binding(2)
+var<storage, read_write> indirect_draw: array<f32>;
+
 
 //SDF_FUNCTIONS
 
@@ -16,8 +20,8 @@ struct Uniforms {
     resolution: vec2<f32>
 }
 
-@group(0) @binding(2)
-var<uniform> uniforms: Uniforms;
+//@group(0) @binding(2)
+//var<uniform> uniforms: Uniforms;
 
 @compute
 @workgroup_size(1)
@@ -33,7 +37,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) -> @location(0) vec
 
   var tot: vec3<f32> = vec3<f32>(0.0);
   
-  let p = vec2<f32>(f32(global_id.x) / f32(uniforms.resolution.x), f32(global_id.y) / f32(uniforms.resolution.y));
+  let p = vec2<f32>(f32(global_id.x) / 1024.0, f32(global_id.y) / 1024.0);
 
   // create view ray
   let rd = normalize( p.x*uu + p.y*vv + 1.5*ww );

@@ -57,9 +57,11 @@ WGPUDevice CreateDevice() {
 
 int main() {
   Executor e;
-  ExecutionContext c{
-      .shader_cache =
-          ShaderCache<WGPUCompiler, WGPUShaderModule>(CreateDevice())};
+  DeviceWGPU device(CreateDevice());
+
+  ExecutionContext c{.shader_cache = ShaderCache(device),
+                     .buffer_pool = BufferPool(device),
+                     .device = &device};
 
   e.Register<CubeOp>();
   e.Register<TextOp>();

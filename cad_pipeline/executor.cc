@@ -4,19 +4,19 @@
 
 #include "webgpu/webgpu.h"
 
-static void handle_request_adapter(WGPURequestAdapterStatus /*status*/,
-                                   WGPUAdapter adapter,
-                                   WGPUStringView /*message*/, void *userdata1,
-                                   void * /*userdata2*/) {
-  *(WGPUAdapter *)userdata1 = adapter;
-}
-static void handle_request_device(WGPURequestDeviceStatus status,
-                                  WGPUDevice device, WGPUStringView message,
-                                  void *userdata1, void *userdata2) {
-  *(WGPUDevice *)userdata1 = device;
-}
-static void handle_buffer_map(WGPUMapAsyncStatus status, WGPUStringView message,
-                              void *userdata1, void *userdata2) {}
+// static void handle_request_adapter(WGPURequestAdapterStatus /*status*/,
+//                                    WGPUAdapter adapter,
+//                                    WGPUStringView /*message*/, void *userdata1,
+//                                    void * /*userdata2*/) {
+//   *(WGPUAdapter *)userdata1 = adapter;
+// }
+// static void handle_request_device(WGPURequestDeviceStatus status,
+//                                   WGPUDevice device, WGPUStringView message,
+//                                   void *userdata1, void *userdata2) {
+//   *(WGPUDevice *)userdata1 = device;
+// }
+// static void handle_buffer_map(WGPUMapAsyncStatus status, WGPUStringView message,
+//                               void *userdata1, void *userdata2) {}
 
 Executor::Executor() {
   // WGPUInstance instance = wgpuCreateInstance(NULL);
