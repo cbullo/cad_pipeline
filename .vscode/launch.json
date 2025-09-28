@@ -6,28 +6,19 @@
   "configurations": [
     {
       "name": "(gdb) Launch",
-      "type": "cppdbg",
+      "type": "lldb",
       "request": "launch",
-      "program": "${workspaceFolder}/bazel-bin/cad_pipeline/cad_binary.runfiles/_main/cad_pipeline/cad_binary",
+      "console": "internalConsole",
+      "program": "${workspaceFolder}/bazel-out/k8-dbg/bin/cad_pipeline/cad_binary.runfiles/_main/cad_pipeline/cad_binary",
       "args": [],
-      "stopAtEntry": false,
-      "cwd": "${workspaceFolder}/bazel-bin/cad_pipeline/cad_binary.runfiles/_main",
-      "environment": [],
-      "externalConsole": false,
-      "MIMode": "gdb",
-      "setupCommands": [
-          {
-              "description": "Enable pretty-printing for gdb",
-              "text": "-enable-pretty-printing",
-              "ignoreFailures": true
-          },
-          {
-              "description": "Set Disassembly Flavor to Intel",
-              "text": "-gdb-set disassembly-flavor intel",
-              "ignoreFailures": true
-          }
-      ]
+      //"stopAtEntry": true,
+      //"cwd": "${workspaceFolder}/bazel-bin/cad_pipeline/cad_binary.runfiles/_main",
+      //"environment": [],
+      //"externalConsole": false,
+      
+      "sourceMap": {
+        "/proc/self/cwd": "${workspaceFolder}",
+      }
     }
-
   ]
 }

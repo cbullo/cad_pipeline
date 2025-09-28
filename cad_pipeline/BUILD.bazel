@@ -36,6 +36,7 @@ cc_library(
         "@boost.algorithm",
         "@boost.geometry",
         "@earcut",
+        "@glfw",
         "@libigl",
         "@pmp",
         "@ttf2mesh",
@@ -46,6 +47,16 @@ cc_library(
 cc_binary(
     name = "cad_binary",
     srcs = ["main.cc"],
+    defines = [
+        "GLFW_EXPOSE_NATIVE_X11",
+        "GLFW_EXPOSE_NATIVE_WAYLAND",
+        "GLFW_BUILD_X11=1",
+        "GLFW_BUILD_WAYLAND=1",
+    ],
+    env = {
+        "__NV_PRIME_RENDER_OFFLOAD": "1",
+        "__GLX_VENDOR_LIBRARY_NAME": "nvidia",
+    },
     deps = [
         ":cad_pipeline",
     ],

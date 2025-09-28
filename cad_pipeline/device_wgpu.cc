@@ -18,10 +18,11 @@ WGPUBuffer DeviceWGPU::CreateBuffer(const std::string& name,
 
 WGPUShaderModule DeviceWGPU::Compile(const std::string& name,
                                      const std::string& source) {
-  std::println("Shader source: {}", source);
+  //std::println("Shader source: {}", source);
   auto shader_source = WGPUShaderSourceWGSL{
       .chain =
           (const WGPUChainedStruct){
+              .next = nullptr,
               .sType = WGPUSType_ShaderSourceWGSL,
           },
       .code = {source.c_str(), source.size()},

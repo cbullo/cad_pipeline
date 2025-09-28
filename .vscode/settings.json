@@ -62,5 +62,6 @@
         "__split_buffer": "cpp",
         "__verbose_abort": "cpp",
         "locale": "cpp"
-    }
+    },
+    "cmake.ignoreCMakeListsMissing": true
 }

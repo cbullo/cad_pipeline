@@ -36,6 +36,8 @@ inline std::size_t hash_pointers(const std::vector<T*>& ptrs) {
   return hash_pointers(ptrs.begin(), ptrs.end());
 }
 
+enum class GPUPassType { Compute, Render };
+
 class DeviceWGPU {
  public:
   using Device = WGPUDevice;
@@ -62,18 +64,32 @@ class DeviceWGPU {
 
     current_encoder =
         wgpuDeviceCreateCommandEncoder(device_, &command_encoder_descriptor);
-    // assert(current_encoder);
   }
 
-  void BeginPass() {
+  template <GPUPassType type>
+  void BeginPass();
+
+  template <>
+  void BeginPass<GPUPassType::Compute>() {
     WGPUComputePassDescriptor desc{
         .label = {"compute_pass", WGPU_STRLEN},
     };
     current_pass_encoder =
         wgpuCommandEncoderBeginComputePass(current_encoder, &desc);
   }
+
+  template <>
+  void BeginPass<GPUPassType::Render>() {
+    // WGPURenderPassDescriptor desc{
+    //     .label = {"compute_pass", WGPU_STRLEN},
+    // };
+    // current_pass_encoder =
+    //     wgpuCommandEncoderBeginComputePass(current_encoder, &desc);
+  }
+
   void EndPass() {
-    wgpuComputePassEncoderDispatchWorkgroups(current_pass_encoder, 1024, 1024, 1);
+    wgpuComputePassEncoderDispatchWorkgroups(current_pass_encoder, 1024, 1024,
+                                             1);
 
     wgpuComputePassEncoderEnd(current_pass_encoder);
     wgpuComputePassEncoderRelease(current_pass_encoder);
@@ -82,11 +98,11 @@ class DeviceWGPU {
 
   void EndFrame() {
     WGPUCommandBufferDescriptor desc{
-      .label = {"command_buffer", WGPU_STRLEN},
+        .label = {"command_buffer", WGPU_STRLEN},
     };
     auto command_buffer = wgpuCommandEncoderFinish(current_encoder, &desc);
-    //wgpuCommandEncoderRelease(current_encoder);
-    //current_encoder = nullptr;
+    // wgpuCommandEncoderRelease(current_encoder);
+    // current_encoder = nullptr;
 
     auto queue = wgpuDeviceGetQueue(device_);
     wgpuQueueSubmit(queue, 1, &command_buffer);
@@ -94,7 +110,7 @@ class DeviceWGPU {
     std::println("HERE1");
     wgpuDevicePoll(device_, true, nullptr);
     std::println("HERE2");
-    //wgpuCommandBufferRelease(command_buffer);
+    // wgpuCommandBufferRelease(command_buffer);
   }
 
  private:
@@ -120,12 +136,14 @@ class LayoutBuilderWGPU {
     auto it = pipeline_layouts.find(layouts_hash);
     if (it == pipeline_layouts.end()) {
       WGPUPipelineLayoutDescriptor layout_descriptor{
+          .nextInChain = nullptr,
           .bindGroupLayoutCount = layouts_.size(),
           .bindGroupLayouts = &layouts_[0],
       };
+
       pipeline_layout =
           wgpuDeviceCreatePipelineLayout(device, &layout_descriptor);
-
+      pipeline_layouts[layouts_hash] = pipeline_layout;
     } else {
       pipeline_layout = it->second;
     }
@@ -212,21 +230,26 @@ void DeviceWGPU::BindGroups(DeviceWGPU::Shader shader,
   (layout_builder.BindGroup<GroupTuple>(device_), ...);
   auto pipeline_layout = layout_builder.Finalize(device_);
 
-  WGPUProgrammableStageDescriptor desc{.module = shader,
-                                       .entryPoint = {"main", WGPU_STRLEN},
-                                       .constantCount = 0};
+  WGPUProgrammableStageDescriptor desc{
+      .nextInChain = nullptr,
+      .module = shader,
+      .entryPoint = {"main", WGPU_STRLEN},
+  };
 
+  std::println("{}", (uint64_t)pipeline_layout);
   auto pipeline_descriptor = WGPUComputePipelineDescriptor{
+      .nextInChain = nullptr,
+      .label = {"compute_pipeline", WGPU_STRLEN},
       .layout = pipeline_layout,
       .compute = desc,
   };
 
   auto pipeline_hash =
       hash_compute_pipeline_desc_wo_consts(pipeline_descriptor);
+  std::println("pipeline_hash {}", pipeline_hash);
 
-  std::println("HERE");
   WGPUComputePipeline pipeline = nullptr;
-  auto it = this->pipelines_cache.find(pipeline_hash);
+  auto it = pipelines_cache.find(pipeline_hash);
   if (it == pipelines_cache.end()) {
     pipeline = wgpuDeviceCreateComputePipeline(device_, &pipeline_descriptor);
     pipelines_cache[pipeline_hash] = pipeline;
@@ -236,10 +259,14 @@ void DeviceWGPU::BindGroups(DeviceWGPU::Shader shader,
 
   wgpuComputePassEncoderSetPipeline(current_pass_encoder, pipeline);
 
+  int i = 0;
   GroupsBinderWGPU<DeviceWGPU> binder;
-  (binder.BindGroup(device_, layout_builder.GetBindGroupLayouts()[0],
-                    current_pass_encoder, bind_group_tuple, 0),
-   ...);
+  (
+      [&bind_group_tuple, &layout_builder, &binder, this](int i) {
+        binder.BindGroup(device_, layout_builder.GetBindGroupLayouts()[i],
+                         current_pass_encoder, bind_group_tuple, i);
+      }(i++),
+      ...);
 }
 
 template <typename Device, typename TypeToMap>
@@ -266,18 +293,24 @@ LayoutBuilderWGPU<Device>& LayoutBuilderWGPU<Device>::BindGroupImpl(
 
   // auto bindings_array[] = {Bindings...};
   WGPUBindGroupLayoutEntry entries[] = {WGPUBindGroupLayoutEntry{
+      .nextInChain = nullptr,
       .binding = I,
       .visibility = WGPUShaderStage_Compute,
       .buffer =
-          {
+          WGPUBufferBindingLayout{
+              .nextInChain = nullptr,
               .type = BindingType<Device, typename std::tuple_element<
                                               I, Tuple>::type>::binding_type,
+              .hasDynamicOffset = false,
+
           },
   }...};
 
+  std::println("{}", sizeof(entries) / sizeof(entries[0]));
+
   WGPUBindGroupLayoutDescriptor bind_group_descriptor = {
-      .label = {"bind_group_layout", WGPU_STRLEN},
       .nextInChain = NULL,
+      .label = {"bind_group_layout", WGPU_STRLEN},
       .entryCount = sizeof(entries) / sizeof(entries[0]),
       .entries = entries,
   };
@@ -342,12 +375,16 @@ GroupsBinderWGPU<Device>& GroupsBinderWGPU<Device>::BindGroupImpl(
     const Tuple& group, int group_index, WGPUComputePassEncoder encoder,
     std::index_sequence<I...>) {
   WGPUBindGroupEntry entries[] = {
-      WGPUBindGroupEntry{.binding = I,
+      WGPUBindGroupEntry{.nextInChain = nullptr,
+                         .binding = I,
                          .buffer = std::get<I>(group),
                          .offset = 0,
-                         .size = wgpuBufferGetSize(std::get<I>(group))}...};
+                         .size = wgpuBufferGetSize(std::get<I>(group)),
+                         .sampler = nullptr,
+                         .textureView = nullptr}...};
 
   auto bind_group_description = WGPUBindGroupDescriptor{
+      .nextInChain = nullptr,
       .label = {"bind_group", WGPU_STRLEN},
       .layout = bind_group_layout,
       .entryCount = sizeof(entries) / sizeof(entries[0]),

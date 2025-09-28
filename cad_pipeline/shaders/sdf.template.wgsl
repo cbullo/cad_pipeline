@@ -1,13 +1,17 @@
+struct OutputBuffer {
+  counter: atomic<u32>,
+  instance_count: u32,
+  first_vertex: u32,
+  first_instance: u32,
+  v_positions: array<vec4<f32>>,
+};
+
 @group(0)
 @binding(0)
-var<storage, read_write> v_internal_indices: array<vec4<f32>>;
+var<storage, read_write> internal_vertices: OutputBuffer;
 @group(0)
 @binding(1)
-var<storage, read_write> v_boundary_indices: array<vec4<f32>>;
-@group(0)
-@binding(2)
-var<storage, read_write> indirect_draw: array<f32>;
-
+var<storage, read_write> boundary_vertices: OutputBuffer;
 
 //SDF_FUNCTIONS
 
@@ -16,16 +20,20 @@ fn sdf_func(p: vec3<f32>) -> f32 {
   return 0.0;
 }
 
-struct Uniforms {
-    resolution: vec2<f32>
-}
-
-//@group(0) @binding(2)
-//var<uniform> uniforms: Uniforms;
+var<workgroup> local_index_internal : atomic<u32>;
+var<workgroup> local_index_boundary : atomic<u32>;
 
 @compute
-@workgroup_size(1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) -> @location(0) vec4<f32> {
+@workgroup_size(64)
+fn main(@builtin(local_invocation_id) lid : vec3<u32>,
+        @builtin(global_invocation_id) global_id: vec3<u32>) {
+
+  // Initialize shared counter once per group
+  if (lid.x == 0u) {
+    atomicStore(&local_index_internal, 0u);
+  }
+  workgroupBarrier();
+
   // camera movement	
 	let an: f32 = 0.0;
 	let ro: vec3<f32> = vec3<f32>( 1.0*cos(an), 0.4, 1.0*sin(an) );
@@ -54,7 +62,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) -> @location(0) vec
       }
       t += h;
   }
-      
+
+  let thread_index_boundary = atomicAdd(&local_index_boundary, 3u);
+  let thread_index_internal = atomicAdd(&local_index_internal, 3u);
+
+  workgroupBarrier();
+      // One thread per group reserves a block in the global buffer
+    var base : u32 = 0u;
+    if (lid.x == 0u) {
+        let count = atomicLoad(&local_index_internal);
+        base = atomicAdd(&internal_vertices.counter, count);
+        // Share base with rest of workgroup
+        atomicStore(&local_index_internal, base);
+    }
+  workgroupBarrier();
+  // Read the base (now stored back into localCounter)
+  let base_internal = atomicLoad(&local_index_internal);
+   
   
   // // shading/lighting	
   var col: vec3<f32> = vec3<f32>(0.0);
@@ -71,5 +95,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) -> @location(0) vec
   col = sqrt( col );
   tot += col;
 
-	return vec4<f32>( tot, 1.0 );
+  let global_index = base + lid.x;
+	//return vec4<f32>( tot, 1.0 );
+  internal_vertices.v_positions[global_index] = vec4<f32>( 1.0, 1.0, 1.0, 1.0 );
 }

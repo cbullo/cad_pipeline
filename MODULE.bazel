@@ -6,6 +6,8 @@ bazel_dep(name = "eigen", version = "4.0.0-20241125.bcr.2")
 bazel_dep(name = "boost.geometry", version = "1.87.0")
 bazel_dep(name = "boost.algorithm", version = "1.87.0")
 bazel_dep(name = "earcut", version = "2.2.4")
+#bazel_dep(name = "glfw", version = "3.3.9.bcr.1")
+bazel_dep(name = "libx11", version = "1.8.12.bcr.1")
 
 ####### Node.js version #########
 # By default you get the node version from DEFAULT_NODE_VERSION in @rules_nodejs//nodejs:repositories.bzl
@@ -56,9 +58,9 @@ http_archive(
 
 http_archive(
     name = "wgpu",
-    urls = ["https://github.com/gfx-rs/wgpu-native/releases/download/v25.0.2.2/wgpu-linux-x86_64-release.zip"],
+    urls = ["https://github.com/gfx-rs/wgpu-native/releases/download/v24.0.0.1/wgpu-linux-x86_64-release.zip"],
     build_file = "//:BUILD.wgpu.bazel",
-    integrity = "sha256-eKKk2Q86CmevKrJjT+CYc87Tus6siCLokM3qNNi6mDQ=",
+    integrity = "sha256-shae5Fh0MfexdUEAEVtBl5X2FV1hY6XenQZZhA/tMGs=",
 )
 
 http_archive(
@@ -76,3 +78,12 @@ http_archive(
     urls = ["https://github.com/libigl/triangle/archive/master.tar.gz"],
     integrity = "sha256-yO48ASsne4Cn7CGMNBJm8Vg6aHTanJhOqoMzP8LhrXA=",
 )
+
+http_archive(
+    name = "glfw",
+    build_file = "//:BUILD.glfw.bazel",
+    strip_prefix = "glfw-3.4",
+    urls = ["https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.zip"],
+    integrity = "sha256-tewASycS/Qjohh3CcUKPBId1IAot9xnM9XUUO6dJo+k=",
+)
+

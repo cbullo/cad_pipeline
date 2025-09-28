@@ -1,0 +1,23 @@
+load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
+
+filegroup(
+    name = "all_srcs",
+    srcs = glob(["**/*"]),
+    visibility = ["//visibility:public"],
+)
+
+cmake(
+    name = "glfw",
+    generate_args = [
+        "-G Ninja",
+        "-DGLFW_BUILD_EXAMPLES=OFF",
+        "-DGLFW_BUILD_TESTS=OFF",
+        "-DGLFW_BUILD_DOCS=OFF",
+        "-DGLFW_BUILD_X11=ON",
+        "-DGLFW_BUILD_WAYLAND=ON",
+        "-DGLFW_USE_HYBRID_HPG=ON"
+    ],
+    lib_name = "libglfw3",
+    lib_source = "@glfw//:all_srcs",
+    visibility = ["//visibility:public"],
+)
