@@ -1,16 +1,14 @@
 #pragma once
 
+#include <initializer_list>
+#include <optional>
 #include <print>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
+#include "hash_webgpu.h"
 #include "webgpu/wgpu.h"
-
-// Standard hash_combine (from Boost)
-inline void hash_combine(std::size_t& seed, std::size_t v) {
-  seed ^= v + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
-}
 
 // // --- Variadic form (compile-time length) ---
 // template <class... Ptrs>
@@ -20,23 +18,25 @@ inline void hash_combine(std::size_t& seed, std::size_t v) {
 //   return h;
 // }
 
-// --- Iterator form (runtime length) ---
-template <class It>
-std::size_t hash_pointers(It first, It last) {
-  std::size_t h = 0xcbf29ce484222325ULL;
-  for (; first != last; ++first) {
-    hash_combine(h, reinterpret_cast<std::size_t>(*first));
-  }
-  return h;
-}
+// void frmwrk_setup_logging(WGPULogLevel level) {
 
-// --- Convenience for vector ---
-template <typename T>
-inline std::size_t hash_pointers(const std::vector<T*>& ptrs) {
-  return hash_pointers(ptrs.begin(), ptrs.end());
-}
+//}
 
 enum class GPUPassType { Compute, Render };
+
+template <class... Ts>
+struct Groups {
+  //  std::tuple<Ts...> t;
+};
+// template <class... Ts>
+// Groups(Ts...) -> Groups<Ts...>;
+
+template <class... Ts>
+struct Attrs {
+  //  std::tuple<Ts...> t;
+};
+// template <class... Ts>
+// Attrs(Ts...) -> Attrs<Ts...>;
 
 class DeviceWGPU {
  public:
@@ -48,15 +48,78 @@ class DeviceWGPU {
   // using LayoutBuilder = LayoutBuilderWGPU<DeviceWGPU>;
 
   DeviceWGPU(WGPUDevice dev) { device_ = dev; }
+
+  static inline int GetVertexFormatSize(WGPUVertexFormat format) {
+    switch (format) {
+      case WGPUVertexFormat_Uint8:
+      case WGPUVertexFormat_Sint8:
+      case WGPUVertexFormat_Unorm8:
+      case WGPUVertexFormat_Snorm8:
+        return 1;
+
+      case WGPUVertexFormat_Uint8x2:
+      case WGPUVertexFormat_Sint8x2:
+      case WGPUVertexFormat_Unorm8x2:
+      case WGPUVertexFormat_Snorm8x2:
+      case WGPUVertexFormat_Sint16:
+      case WGPUVertexFormat_Uint16:
+      case WGPUVertexFormat_Unorm16:
+      case WGPUVertexFormat_Snorm16:
+      case WGPUVertexFormat_Float16:
+        return 2;
+
+      case WGPUVertexFormat_Uint8x4:
+      case WGPUVertexFormat_Sint8x4:
+      case WGPUVertexFormat_Unorm8x4:
+      case WGPUVertexFormat_Snorm8x4:
+      case WGPUVertexFormat_Uint16x2:
+      case WGPUVertexFormat_Sint16x2:
+      case WGPUVertexFormat_Unorm16x2:
+      case WGPUVertexFormat_Snorm16x2:
+      case WGPUVertexFormat_Float16x2:
+      case WGPUVertexFormat_Float32:
+      case WGPUVertexFormat_Uint32:
+      case WGPUVertexFormat_Sint32:
+      case WGPUVertexFormat_Unorm10_10_10_2:
+      case WGPUVertexFormat_Unorm8x4BGRA:
+        return 4;
+
+      case WGPUVertexFormat_Uint16x4:
+      case WGPUVertexFormat_Sint16x4:
+      case WGPUVertexFormat_Unorm16x4:
+      case WGPUVertexFormat_Snorm16x4:
+      case WGPUVertexFormat_Float16x4:
+      case WGPUVertexFormat_Float32x2:
+      case WGPUVertexFormat_Uint32x2:
+      case WGPUVertexFormat_Sint32x2:
+        return 8;
+
+      case WGPUVertexFormat_Float32x3:
+      case WGPUVertexFormat_Uint32x3:
+      case WGPUVertexFormat_Sint32x3:
+        return 12;
+
+      case WGPUVertexFormat_Float32x4:
+      case WGPUVertexFormat_Uint32x4:
+      case WGPUVertexFormat_Sint32x4:
+        return 16;
+    }
+  }
+
   WGPUShaderModule Compile(const std::string& name, const std::string& source);
 
   WGPUBuffer CreateBuffer(const std::string& name, WGPUBufferUsage usage,
                           size_t size);
 
   template <typename... GroupTuple>
-  void BindGroups(DeviceWGPU::Shader shader,
+  void BindGroups(DeviceWGPU::Shader shader, const std::string& entry_point,
                   const GroupTuple&... bind_group_tuple);
 
+  template <typename... GroupTuple, typename... AttributeTuple>
+  void BindGroups(DeviceWGPU::Shader vertex_shader,
+                  DeviceWGPU::Shader fragment_shader,
+                  Groups<const GroupTuple&...> bind_group_tuple,
+                  Attrs<const AttributeTuple&...> attribute_group_tuple);
   void BeginFrame() {
     auto command_encoder_descriptor = WGPUCommandEncoderDescriptor{
         .label = {"command_encoder", WGPU_STRLEN},
@@ -66,11 +129,17 @@ class DeviceWGPU {
         wgpuDeviceCreateCommandEncoder(device_, &command_encoder_descriptor);
   }
 
-  template <GPUPassType type>
-  void BeginPass();
+  void DrawIndirect(Buffer buffer, int offset = 0) {
+    wgpuRenderPassEncoderDrawIndirect(current_render_pass_encoder, buffer,
+                                      offset);
+  }
 
-  template <>
-  void BeginPass<GPUPassType::Compute>() {
+  void DrawIndirectIndexed(Buffer buffer, int offset = 0) {
+    wgpuRenderPassEncoderDrawIndexedIndirect(current_render_pass_encoder,
+                                             buffer, offset);
+  }
+
+  void BeginComputePass() {
     WGPUComputePassDescriptor desc{
         .label = {"compute_pass", WGPU_STRLEN},
     };
@@ -78,22 +147,55 @@ class DeviceWGPU {
         wgpuCommandEncoderBeginComputePass(current_encoder, &desc);
   }
 
-  template <>
-  void BeginPass<GPUPassType::Render>() {
-    // WGPURenderPassDescriptor desc{
-    //     .label = {"compute_pass", WGPU_STRLEN},
-    // };
-    // current_pass_encoder =
-    //     wgpuCommandEncoderBeginComputePass(current_encoder, &desc);
+  void BeginRenderPass(WGPUTexture target) {
+    WGPUTextureView frame = wgpuTextureCreateView(target, NULL);
+
+    WGPURenderPassColorAttachment color_attachment{
+        .view = frame,
+        .depthSlice = WGPU_DEPTH_SLICE_UNDEFINED,
+        .loadOp = WGPULoadOp_Clear,
+        .storeOp = WGPUStoreOp_Store,
+        .clearValue =
+            (const WGPUColor){
+                .r = 1.0,
+                .g = 1.0,
+                .b = 0.0,
+                .a = 1.0,
+            },
+    };
+
+    WGPURenderPassDescriptor render_pass_desc{
+        .label = {"render_pass_encoder", WGPU_STRLEN},
+        .colorAttachmentCount = 1,
+        .colorAttachments = &color_attachment
+
+    };
+
+    current_render_pass_encoder =
+        wgpuCommandEncoderBeginRenderPass(current_encoder, &render_pass_desc);
+
+    wgpuTextureViewRelease(frame);
   }
 
-  void EndPass() {
-    wgpuComputePassEncoderDispatchWorkgroups(current_pass_encoder, 1024, 1024,
-                                             1);
+  void DispatchWorgroups(int x, int y, int z) {
+    wgpuComputePassEncoderDispatchWorkgroups(current_pass_encoder, x, y, z);
+  }
 
+  template <GPUPassType type>
+  void EndPass();
+
+  template <>
+  void EndPass<GPUPassType::Compute>() {
     wgpuComputePassEncoderEnd(current_pass_encoder);
     wgpuComputePassEncoderRelease(current_pass_encoder);
     current_pass_encoder = nullptr;
+  }
+
+  template <>
+  void EndPass<GPUPassType::Render>() {
+    wgpuRenderPassEncoderEnd(current_render_pass_encoder);
+    wgpuRenderPassEncoderRelease(current_render_pass_encoder);
+    current_render_pass_encoder = nullptr;
   }
 
   void EndFrame() {
@@ -101,22 +203,26 @@ class DeviceWGPU {
         .label = {"command_buffer", WGPU_STRLEN},
     };
     auto command_buffer = wgpuCommandEncoderFinish(current_encoder, &desc);
-    // wgpuCommandEncoderRelease(current_encoder);
-    // current_encoder = nullptr;
+    wgpuCommandEncoderRelease(current_encoder);
+    current_encoder = nullptr;
 
     auto queue = wgpuDeviceGetQueue(device_);
     wgpuQueueSubmit(queue, 1, &command_buffer);
 
-    std::println("HERE1");
-    wgpuDevicePoll(device_, true, nullptr);
-    std::println("HERE2");
-    // wgpuCommandBufferRelease(command_buffer);
+    // wgpuDevicePoll(device_, true, nullptr);
+    wgpuCommandBufferRelease(command_buffer);
+  }
+
+  Device GetDevice() { return device_; };
+  WGPURenderPassEncoder GetRenderEncoder() {
+    return current_render_pass_encoder;
   }
 
  private:
   Device device_;
   WGPUCommandEncoder current_encoder = nullptr;
   WGPUComputePassEncoder current_pass_encoder = nullptr;
+  WGPURenderPassEncoder current_render_pass_encoder = nullptr;
   std::unordered_map<size_t, WGPUComputePipeline> pipelines_cache;
 };
 
@@ -191,39 +297,9 @@ template <typename Device>
 std::unordered_map<size_t, WGPUPipelineLayout>
     LayoutBuilderWGPU<Device>::pipeline_layouts;
 
-inline std::size_t hash_string_view(WGPUStringView sv) {
-  // FNV-1a 64 over bytes
-  std::size_t h = 1469598103934665603ULL;
-  const unsigned char* p = reinterpret_cast<const unsigned char*>(sv.data);
-  for (size_t i = 0; i < sv.length; ++i) {
-    h ^= p[i];
-    h *= 1099511628211ULL;
-  }
-  hash_combine(h, sv.length);
-  return h;
-}
-
-// --- hash the stage WITHOUT constants ---
-inline std::size_t hash_stage_wo_consts(
-    const WGPUProgrammableStageDescriptor& s) {
-  std::size_t h = 0xcbf29ce484222325ULL;
-  hash_combine(
-      h, reinterpret_cast<std::size_t>(s.module));  // shader module handle
-  // hash_combine(h, hash_string_view(s.entryPoint));  // entry point name
-  return h;
-}
-
-// --- final: compute-pipeline descriptor WITHOUT constants ---
-inline std::size_t hash_compute_pipeline_desc_wo_consts(
-    const WGPUComputePipelineDescriptor& d) {
-  std::size_t h = 0xcbf29ce484222325ULL;
-  hash_combine(h, reinterpret_cast<std::size_t>(d.layout));  // nullable allowed
-  hash_combine(h, hash_stage_wo_consts(d.compute));
-  return h;
-}
-
 template <typename... GroupTuple>
 void DeviceWGPU::BindGroups(DeviceWGPU::Shader shader,
+                            const std::string& entry_point,
                             const GroupTuple&... bind_group_tuple) {
   LayoutBuilderWGPU<DeviceWGPU> layout_builder;
 
@@ -233,7 +309,7 @@ void DeviceWGPU::BindGroups(DeviceWGPU::Shader shader,
   WGPUProgrammableStageDescriptor desc{
       .nextInChain = nullptr,
       .module = shader,
-      .entryPoint = {"main", WGPU_STRLEN},
+      .entryPoint = {entry_point.data(), entry_point.size()},
   };
 
   std::println("{}", (uint64_t)pipeline_layout);
@@ -324,50 +400,6 @@ LayoutBuilderWGPU<Device>& LayoutBuilderWGPU<Device>::BindGroupImpl(
   return *this;
 }
 
-// inline void hash_combine(std::size_t& h, std::size_t v) {
-//   h ^= v + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
-// }
-
-inline std::size_t hash_bind_group_entry(const WGPUBindGroupEntry& e) {
-  std::size_t h = 0;
-  // Binding index always matters
-  hash_combine(h, static_cast<std::size_t>(e.binding));
-
-  // Exactly one of these should be set; fold a tag + handle
-  if (e.buffer) {
-    hash_combine(h, 0xb00f);  // tag: buffer
-    hash_combine(h, reinterpret_cast<std::size_t>(e.buffer));
-    hash_combine(h, static_cast<std::size_t>(e.offset));
-    hash_combine(h, static_cast<std::size_t>(e.size));
-  } else if (e.textureView) {
-    hash_combine(h, 0x7ef7);  // tag: texture view
-    hash_combine(h, reinterpret_cast<std::size_t>(e.textureView));
-  } else if (e.sampler) {
-    hash_combine(h, 0x5a9d);  // tag: sampler
-    hash_combine(h, reinterpret_cast<std::size_t>(e.sampler));
-  } else {
-    // If you ever use chain extensions, fold them here as well
-    hash_combine(h, 0xdead);  // empty/unexpected
-  }
-  return h;
-}
-
-inline std::size_t hash_bind_group_desc(const WGPUBindGroupDescriptor& d) {
-  std::size_t h = 0xcbf29ce484222325ULL;  // a seed
-  // Layout handle
-  hash_combine(h, reinterpret_cast<std::size_t>(d.layout));
-  // Entry count
-  hash_combine(h, static_cast<std::size_t>(d.entryCount));
-
-  // If your entries might arrive out-of-order, either sort a copy by
-  // `binding` first, or also fold the binding (we already do) so order
-  // changes won’t collide.
-  for (uint32_t i = 0; i < d.entryCount; ++i)
-    hash_combine(h, hash_bind_group_entry(d.entries[i]));
-
-  return h;
-}
-
 template <typename Device>
 template <typename Tuple, std::size_t... I>
 GroupsBinderWGPU<Device>& GroupsBinderWGPU<Device>::BindGroupImpl(
@@ -391,10 +423,11 @@ GroupsBinderWGPU<Device>& GroupsBinderWGPU<Device>::BindGroupImpl(
       .entries = entries};
 
   auto hash = hash_bind_group_desc(bind_group_description);
+  std::println("Bind groups count: {}", bind_group_description.entryCount);
+  std::println("Bind group hash: {}", hash);
   static std::unordered_map<size_t, WGPUBindGroup> bind_groups;
   WGPUBindGroup bind_group = nullptr;
   auto it = bind_groups.find(hash);
-
   if (it == bind_groups.end()) {
     bind_group = wgpuDeviceCreateBindGroup(device, &bind_group_description);
     bind_groups[hash] = bind_group;
@@ -407,3 +440,138 @@ GroupsBinderWGPU<Device>& GroupsBinderWGPU<Device>::BindGroupImpl(
 
   return *this;
 }
+
+template <class Device>
+class RenderPipelineBuilder {
+ public:
+  RenderPipelineBuilder()
+      : descriptor_{}, depth_stencil_{}, fragment_state_{} {}
+
+  RenderPipelineBuilder& AttachAttributeBuffer(
+      DeviceWGPU::Buffer buffer,
+      std::initializer_list<WGPUVertexAttribute> attributes, int offset = 0,
+      int stride = -1) {
+    attributes_per_buffer_.push_back(attributes);
+    buffer_layouts_.push_back({.stepMode = WGPUVertexStepMode_Vertex,
+                               .arrayStride = static_cast<uint64_t>(stride)});
+
+    buffers_.push_back({buffer, offset});
+    return *this;
+  }
+  RenderPipelineBuilder& SetVertexShader(WGPUShaderModule shader,
+                                         const std::string& entry_point) {
+    descriptor_.vertex.module = shader;
+    descriptor_.vertex.entryPoint = {entry_point.data(), entry_point.size()};
+    return *this;
+  }
+  RenderPipelineBuilder& SetFragmentShader(WGPUShaderModule shader,
+                                           const std::string& entry_point) {
+    fragment_state_.module = shader;
+    fragment_state_.entryPoint = {entry_point.data(), entry_point.size()};
+    return *this;
+  }
+  RenderPipelineBuilder& SetPrimitiveState(
+      const WGPUPrimitiveState& primitive_state) {
+    descriptor_.primitive = primitive_state;
+    return *this;
+  }
+  RenderPipelineBuilder& SetIndexBuffer(DeviceWGPU::Buffer buffer,
+                                        int offset = 0) {
+    index_buffer_ = buffer;
+    index_buffer_offset_ = offset;
+    return *this;
+  }
+
+  RenderPipelineBuilder& SetDepthStencilState(
+      const WGPUDepthStencilState& depth_stencil_state) {
+    depth_stencil_ = depth_stencil_state;
+    descriptor_.depthStencil = &depth_stencil_;
+    return *this;
+  }
+  RenderPipelineBuilder& SetMultisampleState(
+      const WGPUMultisampleState& multisample_state) {
+    descriptor_.multisample = multisample_state;
+    return *this;
+  }
+  RenderPipelineBuilder& AttachColorTarget(
+      const WGPUColorTargetState& color_target_state) {
+    color_targets_.push_back(color_target_state);
+    return *this;
+  }
+
+  WGPURenderPipeline Finalize(Device& device) {
+    UpdateDescriptorPointers();
+
+    auto hash = hash_render_pipeline_desc_wo_consts(descriptor_);
+    auto it = this->render_pipeline_cache_.find(hash);
+    if (it == this->render_pipeline_cache_.end()) {
+      auto pipeline =
+          wgpuDeviceCreateRenderPipeline(device.GetDevice(), &descriptor_);
+      it = this->render_pipeline_cache_.insert({hash, pipeline}).first;
+    }
+
+    wgpuRenderPassEncoderSetPipeline(device.GetRenderEncoder(), it->second);
+
+    for (int i = 0; i < this->buffers_.size(); ++i) {
+      wgpuRenderPassEncoderSetVertexBuffer(
+          device.GetRenderEncoder(), i, buffers_[i].buffer, buffers_[i].offset,
+          wgpuBufferGetSize(buffers_[i].buffer));
+    }
+
+    if (index_buffer_.has_value()) {
+      wgpuRenderPassEncoderSetIndexBuffer(
+          device.GetRenderEncoder(), *index_buffer_, WGPUIndexFormat_Uint32,
+          index_buffer_offset_, wgpuBufferGetSize(*index_buffer_));
+    }
+
+    return it->second;
+  }
+
+ private:
+  void UpdateDescriptorPointers() {
+    descriptor_.fragment = &fragment_state_;
+    if (!color_targets_.empty()) {
+      fragment_state_.targets = color_targets_.data();
+      fragment_state_.targetCount = color_targets_.size();
+    }
+
+    if (!buffer_layouts_.empty()) {
+      int i = 0;
+      int vertex_stride = 0;
+      for (auto& bl : buffer_layouts_) {
+        bl.attributes = attributes_per_buffer_[i].data();
+        bl.attributeCount = attributes_per_buffer_[i].size();
+        for (const auto& a : attributes_per_buffer_[i]) {
+          vertex_stride += DeviceWGPU::GetVertexFormatSize(a.format);
+        }
+        if (bl.arrayStride == static_cast<uint64_t>(-1)) {
+          bl.arrayStride = vertex_stride;
+        }
+        i++;
+      }
+      descriptor_.vertex.buffers = buffer_layouts_.data();
+      descriptor_.vertex.bufferCount = buffer_layouts_.size();
+    }
+  }
+
+  WGPURenderPipelineDescriptor descriptor_;
+
+  WGPUDepthStencilState depth_stencil_;
+  WGPUFragmentState fragment_state_;
+  std::vector<WGPUColorTargetState> color_targets_;
+  std::vector<WGPUVertexBufferLayout> buffer_layouts_;
+  std::vector<std::vector<WGPUVertexAttribute>> attributes_per_buffer_;
+  struct BufferInfo {
+    WGPUBuffer buffer;
+    int offset;
+  };
+  std::vector<BufferInfo> buffers_;
+  std::optional<WGPUBuffer> index_buffer_;
+  int index_buffer_offset_ = 0;
+
+  static std::unordered_map<size_t, WGPURenderPipeline> render_pipeline_cache_;
+};
+
+template <class Device>
+std::unordered_map<size_t, WGPURenderPipeline>
+    RenderPipelineBuilder<Device>::render_pipeline_cache_;

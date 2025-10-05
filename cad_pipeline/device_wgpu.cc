@@ -2,6 +2,7 @@
 
 #include <print>
 
+#include "hash_webgpu.h"
 #include "webgpu/wgpu.h"
 
 WGPUBuffer DeviceWGPU::CreateBuffer(const std::string& name,
@@ -18,7 +19,7 @@ WGPUBuffer DeviceWGPU::CreateBuffer(const std::string& name,
 
 WGPUShaderModule DeviceWGPU::Compile(const std::string& name,
                                      const std::string& source) {
-  //std::println("Shader source: {}", source);
+  // std::println("Shader source: {}", source);
   auto shader_source = WGPUShaderSourceWGSL{
       .chain =
           (const WGPUChainedStruct){
@@ -34,3 +35,4 @@ WGPUShaderModule DeviceWGPU::Compile(const std::string& name,
   WGPUShaderModule shader = wgpuDeviceCreateShaderModule(device_, &description);
   return shader;
 }
+

@@ -13,7 +13,7 @@ fn sdBox( p: vec3<f32>, b: vec3<f32> ) -> f32 {
 })";
 
   static std::string Invocation(const Cube& c) {
-    return std::format("sdBox(p, vec3<f32>({:.5f}, {:.5f}, {:.5f}));", c.half_extents[0],
+    return std::format("v += sdBox(p, vec3<f32>({:.5f}, {:.5f}, {:.5f}));", c.half_extents[0],
                        c.half_extents[1], c.half_extents[2]);
   }
 };

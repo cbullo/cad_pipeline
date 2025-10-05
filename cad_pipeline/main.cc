@@ -113,19 +113,22 @@ auto CreateSurface(WGPUInstance instance, WGPUDevice device,
     glfwGetWindowSize(window, &width, &height);
 
     auto config = WGPUSurfaceConfiguration{
+        .device = device,
+        .format = surface_capabilities.formats[0],
+        .usage = WGPUTextureUsage_RenderAttachment,
+
         .width = static_cast<uint32_t>(width),
         .height = static_cast<uint32_t>(height),
-        .device = device,
-        .usage = WGPUTextureUsage_RenderAttachment,
-        .format = surface_capabilities.formats[0],
-        .presentMode = WGPUPresentMode_Fifo,
         .alphaMode = surface_capabilities.alphaModes[0],
+        .presentMode = WGPUPresentMode_Fifo,
+
     };
 
     wgpuSurfaceConfigure(surface, &config);
 
     return surface;
   }
+  return WGPUSurface(nullptr);
 }
 
 #include <cstdio>
@@ -133,48 +136,115 @@ static void error_callback(int error, const char *description) {
   std::println("{}", description);
 }
 
+static void log_callback(WGPULogLevel level, WGPUStringView message,
+                         void *userdata) {
+  char *level_str;
+  switch (level) {
+    case WGPULogLevel_Error:
+      level_str = "error";
+      break;
+    case WGPULogLevel_Warn:
+      level_str = "warn";
+      break;
+    case WGPULogLevel_Info:
+      level_str = "info";
+      break;
+    case WGPULogLevel_Debug:
+      level_str = "debug";
+      break;
+    case WGPULogLevel_Trace:
+      level_str = "trace";
+      break;
+    default:
+      level_str = "unknown_level";
+  }
+  fprintf(stderr, "[wgpu] [%s] %.*s\n", level_str, (int)message.length,
+          message.data);
+}
+
 int main() {
   if (!glfwInit()) {
     return -1;
   }
   glfwSetErrorCallback(error_callback);
+
+  wgpuSetLogCallback(log_callback, NULL);
+  wgpuSetLogLevel(WGPULogLevel_Trace);
   auto *instance = wgpuCreateInstance(NULL);
   assert(instance);
   GLFWwindow *window = CreateWindow();
   assert(window);
 
-  // Executor e;
+  Executor e;
 
   auto *wgpu_device = CreateDevice(instance);
   DeviceWGPU device(wgpu_device);
   auto *surface = CreateSurface(instance, wgpu_device, window);
 
-  // ExecutionContext c{.shader_cache = ShaderCache(device),
-  //                    .buffer_pool = BufferPool(device),
-  //                    .device = &device};
+  ExecutionContext c{.shader_cache = ShaderCache(device),
+                     .buffer_pool = BufferPool(device),
+                     .device = &device,
+                     .surface_texture = nullptr};
 
-  // e.Register<CubeOp>();
-  // // e.Register<TextOp>();
-  // e.Register<TriangulateOp>();
-  // // e.Register<WriteSTLOp>();
-  // // e.Register<WritePLYOp>();
-  // e.Register<ExtrudeOp>();
-  // // e.Register<ChamferOp>();
-  // e.Register<SDFDrawOp>();
-  // // e.Register<DistanceOp>();
+  e.Register<CubeOp>();
+  // e.Register<TextOp>();
+  e.Register<TriangulateOp>();
+  // e.Register<WriteSTLOp>();
+  // e.Register<WritePLYOp>();
+  e.Register<ExtrudeOp>();
+  // e.Register<ChamferOp>();
+  e.Register<SDFDrawOp>();
+  // e.Register<DistanceOp>();
 
-  // // ParseAndProcess("N2.1N0S3LN2.1N4 SHL N-3.1N5 SHL N2.1N1SDLN-2.1N2S3L
-  // // N-2.1 N3 SDL N1.2 N5C B E EEEEETW", e, c);
-  // ParseAndProcess("N5CF", e, c);
+  // ParseAndProcess("N2.1N0S3LN2.1N4 SHL N-3.1N5 SHL N2.1N1SDLN-2.1N2S3L
+  // N-2.1 N3 SDL N1.2 N5C B E EEEEETW", e, c);
 
   std::println("Finished");
 
+  bool first = true;
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
     WGPUSurfaceTexture surface_texture;
     wgpuSurfaceGetCurrentTexture(surface, &surface_texture);
+    switch (surface_texture.status) {
+      case WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal:
+      case WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal:
+        // All good, could handle suboptimal here
+        break;
+      case WGPUSurfaceGetCurrentTextureStatus_Timeout:
+      case WGPUSurfaceGetCurrentTextureStatus_Outdated:
+      case WGPUSurfaceGetCurrentTextureStatus_Lost: {
+        // Skip this frame, and re-configure surface.
+        // if (surface_texture.texture != NULL) {
+        //   wgpuTextureRelease(surface_texture.texture);
+        // }
+        // int width, height;
+        // glfwGetWindowSize(window, &width, &height);
+        // if (width != 0 && height != 0) {
+        //   demo.config.width = width;
+        //   demo.config.height = height;
+        //   wgpuSurfaceConfigure(demo.surface, &demo.config);
+        // }
+        // continue;
+        std::println("LOST");
+        break;
+      }
+      case WGPUSurfaceGetCurrentTextureStatus_OutOfMemory:
+      case WGPUSurfaceGetCurrentTextureStatus_DeviceLost:
+      case WGPUSurfaceGetCurrentTextureStatus_Force32:
+        // Fatal error
+        printf(" get_current_texture status=%#.8x\n",
+               surface_texture.status);
+        abort();
+    }
+
+    c.surface_texture = surface_texture;
+
+    ParseAndProcess("N0.3CF", e, c);
+    first = false;
 
     wgpuSurfacePresent(surface);
+
     wgpuTextureRelease(surface_texture.texture);
   }
 

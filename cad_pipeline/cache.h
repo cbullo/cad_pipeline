@@ -85,6 +85,15 @@ class BufferPool {
     return buffer;
   }
 
+  void ReleaseBuffer(typename Device::Buffer buffer) {
+    auto buffer_size = wgpuBufferGetSize(buffer);
+    auto buffer_usage = wgpuBufferGetUsage(buffer);
+
+    int power_of_2 = std::bit_width(buffer_size) - 1;
+    auto& usage_pool = pool_[buffer_usage];
+    usage_pool[power_of_2].push(buffer);
+  }
+
  private:
   std::unordered_map<typename Device::BufferUsage,
                      std::vector<std::stack<typename Device::Buffer>>>
@@ -98,4 +107,5 @@ struct ExecutionContext {
   ShaderCache<DeviceWGPU> shader_cache;
   BufferPool<DeviceWGPU> buffer_pool;
   DeviceWGPU* device;
+  WGPUSurfaceTexture surface_texture;
 };

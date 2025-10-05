@@ -16,6 +16,7 @@ cc_library(
         "cube.h",
         "device_wgpu.h",
         #"distance_map.h",
+        "hash_webgpu.h",
         "executor.h",
         "extrude.h",
         "interpreter.h",
@@ -30,7 +31,10 @@ cc_library(
         "write_ply.h",
         "write_stl.h",
     ],
-    additional_compiler_inputs = ["shaders/sdf.template.wgsl"],
+    additional_compiler_inputs = [
+        "shaders/sdf.compute.template.wgsl",
+        "shaders/sdf.render.wgsl",
+    ],
     cxxopts = ["--embed-dir=cad_pipeline/shaders/"],
     deps = [
         "@boost.algorithm",
