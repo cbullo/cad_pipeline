@@ -157,10 +157,10 @@ class DeviceWGPU {
         .storeOp = WGPUStoreOp_Store,
         .clearValue =
             (const WGPUColor){
-                .r = 1.0,
-                .g = 1.0,
+                .r = 0.0,
+                .g = 0.0,
                 .b = 0.0,
-                .a = 1.0,
+                .a = 0.0,
             },
     };
 
@@ -312,7 +312,7 @@ void DeviceWGPU::BindGroups(DeviceWGPU::Shader shader,
       .entryPoint = {entry_point.data(), entry_point.size()},
   };
 
-  std::println("{}", (uint64_t)pipeline_layout);
+  //std::println("{}", (uint64_t)pipeline_layout);
   auto pipeline_descriptor = WGPUComputePipelineDescriptor{
       .nextInChain = nullptr,
       .label = {"compute_pipeline", WGPU_STRLEN},
@@ -322,7 +322,7 @@ void DeviceWGPU::BindGroups(DeviceWGPU::Shader shader,
 
   auto pipeline_hash =
       hash_compute_pipeline_desc_wo_consts(pipeline_descriptor);
-  std::println("pipeline_hash {}", pipeline_hash);
+  //std::println("pipeline_hash {}", pipeline_hash);
 
   WGPUComputePipeline pipeline = nullptr;
   auto it = pipelines_cache.find(pipeline_hash);
@@ -423,8 +423,8 @@ GroupsBinderWGPU<Device>& GroupsBinderWGPU<Device>::BindGroupImpl(
       .entries = entries};
 
   auto hash = hash_bind_group_desc(bind_group_description);
-  std::println("Bind groups count: {}", bind_group_description.entryCount);
-  std::println("Bind group hash: {}", hash);
+  //std::println("Bind groups count: {}", bind_group_description.entryCount);
+  //std::println("Bind group hash: {}", hash);
   static std::unordered_map<size_t, WGPUBindGroup> bind_groups;
   WGPUBindGroup bind_group = nullptr;
   auto it = bind_groups.find(hash);
@@ -537,8 +537,9 @@ class RenderPipelineBuilder {
 
     if (!buffer_layouts_.empty()) {
       int i = 0;
-      int vertex_stride = 0;
+      
       for (auto& bl : buffer_layouts_) {
+        int vertex_stride = 0;
         bl.attributes = attributes_per_buffer_[i].data();
         bl.attributeCount = attributes_per_buffer_[i].size();
         for (const auto& a : attributes_per_buffer_[i]) {

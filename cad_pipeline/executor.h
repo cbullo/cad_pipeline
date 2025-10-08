@@ -105,7 +105,7 @@ struct Op {
       auto geometry = std::apply(F, callable_params);
       execution_context.cache[cache_key] = geometry;
     } else {
-      std::println("Read from cache: {}", cache_key);
+      //std::println("Read from cache: {}", cache_key);
     }
 
     return cache_key;

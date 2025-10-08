@@ -168,8 +168,8 @@ int main() {
   }
   glfwSetErrorCallback(error_callback);
 
-  wgpuSetLogCallback(log_callback, NULL);
-  wgpuSetLogLevel(WGPULogLevel_Trace);
+  //wgpuSetLogCallback(log_callback, NULL);
+  //wgpuSetLogLevel(WGPULogLevel_Trace);
   auto *instance = wgpuCreateInstance(NULL);
   assert(instance);
   GLFWwindow *window = CreateWindow();

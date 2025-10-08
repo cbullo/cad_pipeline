@@ -17,7 +17,7 @@ using SDFBindGroup = std::tuple<DeviceWGPU::Buffer, DeviceWGPU::Buffer>;
 
 AnyGeometry SDFDraw(ExecutionContext& execution_context,
                     const AnyGeometry& geometry) {
-  std::println("SDFDraw()");
+  // std::println("SDFDraw()");
   static constexpr char compute_shader_template[] = {
   // clang-format off
 #embed <sdf.compute.template.wgsl>
@@ -40,6 +40,12 @@ AnyGeometry SDFDraw(ExecutionContext& execution_context,
                                           "//SDF_INVOCATIONS",
                                           SDF<Cube>::Invocation(*cube));
 
+            boost::algorithm::replace_all(compute_shader_src,
+                                          "//SDF_NORMALS_FUNCTIONS",
+                                          SDF<Cube>::sdf_normal);
+            boost::algorithm::replace_all(compute_shader_src, "//SDF_NORMALS",
+                                          SDF<Cube>::NormalInvocation(*cube));
+
             auto compute_shader =
                 execution_context.shader_cache.GetShader(compute_shader_src);
 
@@ -53,26 +59,21 @@ AnyGeometry SDFDraw(ExecutionContext& execution_context,
               int y = 1024;
             } resolution;
 
-            // auto indirect_buffer =
-            // execution_context.buffer_pool.ReserveBuffer(
-            //     WGPUBufferUsage_Storage | WGPUBufferUsage_Indirect, 16);
-
             auto internal_triangles =
                 execution_context.buffer_pool.ReserveBuffer(
                     WGPUBufferUsage_Storage | WGPUBufferUsage_Indirect |
                         WGPUBufferUsage_Index,
                     20 + 2 * 3 * 4 * (resolution.x / 16) * (resolution.y / 16));
 
-            // auto boundary_triangles =
-            //     execution_context.buffer_pool.ReserveBuffer(
-            //         WGPUBufferUsage_Storage | WGPUBufferUsage_Indirect |
-            //             WGPUBufferUsage_Index,
-            //         20 + 2 * 3 * 4 * (resolution.x / 16) * (resolution.y /
-            //         16));
+            auto boundary_triangles =
+                execution_context.buffer_pool.ReserveBuffer(
+                    WGPUBufferUsage_Storage | WGPUBufferUsage_Indirect |
+                        WGPUBufferUsage_Index,
+                    20 + 2 * 3 * 4 * (resolution.x / 16) * (resolution.y / 16));
 
             auto vertices = execution_context.buffer_pool.ReserveBuffer(
                 WGPUBufferUsage_Storage | WGPUBufferUsage_Vertex,
-                4 * 4 * (resolution.x / 16 + 1) * (resolution.y / 16 + 1));
+                2 * 4 * 4 * (resolution.x / 16 + 1) * (resolution.y / 16 + 1));
 
             auto time_buf = execution_context.buffer_pool.ReserveBuffer(
                 WGPUBufferUsage_Storage, 4);
@@ -81,19 +82,21 @@ AnyGeometry SDFDraw(ExecutionContext& execution_context,
             execution_context.device->BeginComputePass();
             execution_context.device->BindGroups(
                 compute_shader, "reset_counter",
-                std::tuple(internal_triangles, vertices, time_buf));
+                std::tuple(internal_triangles, boundary_triangles, vertices,
+                           time_buf));
             execution_context.device->DispatchWorgroups(1, 1, 1);
 
             execution_context.device->BindGroups(
                 compute_shader, "output_vertices",
-                std::tuple(internal_triangles, vertices, time_buf));
+                std::tuple(internal_triangles, boundary_triangles, vertices,
+                           time_buf));
             execution_context.device->DispatchWorgroups(
                 resolution.x / 16 + 1, resolution.y / 16 + 1, 1);
 
             // execution_context.device->BeginComputePass();
             execution_context.device->BindGroups(
                 compute_shader, "output_indices",
-                std::tuple(internal_triangles, vertices));
+                std::tuple(internal_triangles, boundary_triangles, vertices));
             execution_context.device->DispatchWorgroups(
                 (resolution.x / 16) * (resolution.y / 16), 1, 1);
 
@@ -108,7 +111,10 @@ AnyGeometry SDFDraw(ExecutionContext& execution_context,
                     .SetVertexShader(render_shader, "vs_main")
                     .SetFragmentShader(render_shader, "fs_main")
                     .AttachAttributeBuffer(
-                        vertices, {{WGPUVertexFormat_Float32x4, 0, 0}}, 0)
+                        vertices,
+                        {{WGPUVertexFormat_Float32x4, 0, 0},
+                         {WGPUVertexFormat_Float32x4, 16, 1}},
+                        0)
                     .SetIndexBuffer(internal_triangles, 20)
                     .AttachColorTarget(
                         {.format = WGPUTextureFormat_BGRA8UnormSrgb,
@@ -121,10 +127,33 @@ AnyGeometry SDFDraw(ExecutionContext& execution_context,
 
             execution_context.device->DrawIndirectIndexed(internal_triangles);
 
+            RenderPipelineBuilder<DeviceWGPU> boundary_render_pipeline_builder;
+            auto boundary_pipeline =
+                boundary_render_pipeline_builder
+                    .SetVertexShader(render_shader, "vs_boundary_main")
+                    .SetFragmentShader(render_shader, "fs_boundary_main")
+                    .AttachAttributeBuffer(
+                        vertices,
+                        {{WGPUVertexFormat_Float32x4, 0, 0},
+                         {WGPUVertexFormat_Float32x4, 16, 1}},
+                        0)
+                    .SetIndexBuffer(boundary_triangles, 20)
+                    .AttachColorTarget(
+                        {.format = WGPUTextureFormat_BGRA8UnormSrgb,
+                         .writeMask = WGPUColorWriteMask_All})
+                    .SetMultisampleState(
+                        {.count = 1, .mask = WGPUColorWriteMask_All})
+                    .SetPrimitiveState(
+                        {.topology = WGPUPrimitiveTopology_TriangleList})
+                    .Finalize(*execution_context.device);
+
+            execution_context.device->DrawIndirectIndexed(boundary_triangles);
+
             execution_context.device->EndPass<GPUPassType::Render>();
             execution_context.device->EndFrame();
 
             execution_context.buffer_pool.ReleaseBuffer(internal_triangles);
+            execution_context.buffer_pool.ReleaseBuffer(boundary_triangles);
             execution_context.buffer_pool.ReleaseBuffer(vertices);
             execution_context.buffer_pool.ReleaseBuffer(time_buf);
 
