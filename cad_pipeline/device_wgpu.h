@@ -38,6 +38,16 @@ struct Attrs {
 // template <class... Ts>
 // Attrs(Ts...) -> Attrs<Ts...>;
 
+template <WGPUBufferBindingType BindingType, WGPUFlags Visibility,
+          int BindingIndex>
+struct BufferWithBinding {
+  using Binding = std::integral_constant<WGPUBufferBindingType, BindingType>;
+  using VisibilityFlags = std::integral_constant<WGPUFlags, Visibility>;
+  static const int Index = BindingIndex;
+
+  WGPUBuffer buffer;
+};
+
 class DeviceWGPU {
  public:
   using Device = WGPUDevice;
@@ -104,6 +114,11 @@ class DeviceWGPU {
       case WGPUVertexFormat_Sint32x4:
         return 16;
     }
+  }
+
+  void WriteBuffer(Buffer buffer, int offset, const void* data, size_t size) {
+    wgpuQueueWriteBuffer(wgpuDeviceGetQueue(device_), buffer, offset, data,
+                         size);
   }
 
   WGPUShaderModule Compile(const std::string& name, const std::string& source);
@@ -269,25 +284,31 @@ class LayoutBuilderWGPU {
   std::vector<WGPUBindGroupLayout> layouts_;
 };
 
-template <typename Device>
+template <typename Device, typename EncoderType>
 class GroupsBinderWGPU {
  public:
   template <typename Tuple>
   GroupsBinderWGPU& BindGroup(typename Device::Device device,
                               WGPUBindGroupLayout bind_group_layout,
-                              WGPUComputePassEncoder encoder,
-                              const Tuple& group, int group_index) {
+                              EncoderType encoder, const Tuple& group,
+                              int group_index) {
     return BindGroupImpl<Tuple>(
         device, bind_group_layout, group, group_index, encoder,
         std::make_index_sequence<std::tuple_size_v<Tuple>>{});
   }
 
  private:
+  void SetBindGroup(WGPUComputePassEncoder encoder, int group_index,
+                    WGPUBindGroup bind_group);
+
+  void SetBindGroup(WGPURenderPassEncoder encoder, int group_index,
+                    WGPUBindGroup bind_group);
+
   template <typename Tuple, std::size_t... I>
   GroupsBinderWGPU& BindGroupImpl(typename Device::Device device,
                                   WGPUBindGroupLayout bind_group_layout,
                                   const Tuple& group, int group_index,
-                                  WGPUComputePassEncoder encoder,
+                                  EncoderType encoder,
                                   std::index_sequence<I...>);
   static std::unordered_map<size_t, WGPUPipelineLayout> pipeline_layouts;
   std::vector<WGPUBindGroupLayout> layouts_;
@@ -312,7 +333,7 @@ void DeviceWGPU::BindGroups(DeviceWGPU::Shader shader,
       .entryPoint = {entry_point.data(), entry_point.size()},
   };
 
-  //std::println("{}", (uint64_t)pipeline_layout);
+  // std::println("{}", (uint64_t)pipeline_layout);
   auto pipeline_descriptor = WGPUComputePipelineDescriptor{
       .nextInChain = nullptr,
       .label = {"compute_pipeline", WGPU_STRLEN},
@@ -322,7 +343,7 @@ void DeviceWGPU::BindGroups(DeviceWGPU::Shader shader,
 
   auto pipeline_hash =
       hash_compute_pipeline_desc_wo_consts(pipeline_descriptor);
-  //std::println("pipeline_hash {}", pipeline_hash);
+  // std::println("pipeline_hash {}", pipeline_hash);
 
   WGPUComputePipeline pipeline = nullptr;
   auto it = pipelines_cache.find(pipeline_hash);
@@ -336,7 +357,7 @@ void DeviceWGPU::BindGroups(DeviceWGPU::Shader shader,
   wgpuComputePassEncoderSetPipeline(current_pass_encoder, pipeline);
 
   int i = 0;
-  GroupsBinderWGPU<DeviceWGPU> binder;
+  GroupsBinderWGPU<DeviceWGPU, WGPUComputePassEncoder> binder;
   (
       [&bind_group_tuple, &layout_builder, &binder, this](int i) {
         binder.BindGroup(device_, layout_builder.GetBindGroupLayouts()[i],
@@ -352,6 +373,12 @@ template <>
 struct BindingType<DeviceWGPU, typename DeviceWGPU::Buffer> {
   static const WGPUBufferBindingType binding_type =
       WGPUBufferBindingType_Storage;
+};
+
+template <>
+struct BindingType<DeviceWGPU, std::nullptr_t> {
+  static const WGPUBufferBindingType binding_type =
+      WGPUBufferBindingType_BindingNotUsed;
 };
 
 template <typename Device>
@@ -370,15 +397,13 @@ LayoutBuilderWGPU<Device>& LayoutBuilderWGPU<Device>::BindGroupImpl(
   // auto bindings_array[] = {Bindings...};
   WGPUBindGroupLayoutEntry entries[] = {WGPUBindGroupLayoutEntry{
       .nextInChain = nullptr,
-      .binding = I,
-      .visibility = WGPUShaderStage_Compute,
+      .binding = std::tuple_element_t<I, Tuple>::Index,
+      .visibility = std::tuple_element_t<I, Tuple>::VisibilityFlags::value,
       .buffer =
           WGPUBufferBindingLayout{
               .nextInChain = nullptr,
-              .type = BindingType<Device, typename std::tuple_element<
-                                              I, Tuple>::type>::binding_type,
+              .type = std::tuple_element_t<I, Tuple>::Binding::value,
               .hasDynamicOffset = false,
-
           },
   }...};
 
@@ -400,20 +425,23 @@ LayoutBuilderWGPU<Device>& LayoutBuilderWGPU<Device>::BindGroupImpl(
   return *this;
 }
 
-template <typename Device>
+template <typename Device, typename EncoderType>
 template <typename Tuple, std::size_t... I>
-GroupsBinderWGPU<Device>& GroupsBinderWGPU<Device>::BindGroupImpl(
+GroupsBinderWGPU<Device, EncoderType>&
+GroupsBinderWGPU<Device, EncoderType>::BindGroupImpl(
     typename Device::Device device, WGPUBindGroupLayout bind_group_layout,
-    const Tuple& group, int group_index, WGPUComputePassEncoder encoder,
+    const Tuple& group, int group_index, EncoderType encoder,
     std::index_sequence<I...>) {
-  WGPUBindGroupEntry entries[] = {
-      WGPUBindGroupEntry{.nextInChain = nullptr,
-                         .binding = I,
-                         .buffer = std::get<I>(group),
-                         .offset = 0,
-                         .size = wgpuBufferGetSize(std::get<I>(group)),
-                         .sampler = nullptr,
-                         .textureView = nullptr}...};
+  WGPUBindGroupEntry entries[] = {WGPUBindGroupEntry{
+      .nextInChain = nullptr,
+      .binding = std::get<I>(group).Index,
+      .buffer = std::get<I>(group).buffer,
+      .offset = 0,
+      .size = std::get<I>(group).buffer
+                  ? wgpuBufferGetSize(std::get<I>(group).buffer)
+                  : 0,
+      .sampler = nullptr,
+      .textureView = nullptr}...};
 
   auto bind_group_description = WGPUBindGroupDescriptor{
       .nextInChain = nullptr,
@@ -423,8 +451,8 @@ GroupsBinderWGPU<Device>& GroupsBinderWGPU<Device>::BindGroupImpl(
       .entries = entries};
 
   auto hash = hash_bind_group_desc(bind_group_description);
-  //std::println("Bind groups count: {}", bind_group_description.entryCount);
-  //std::println("Bind group hash: {}", hash);
+  // std::println("Bind groups count: {}", bind_group_description.entryCount);
+  // std::println("Bind group hash: {}", hash);
   static std::unordered_map<size_t, WGPUBindGroup> bind_groups;
   WGPUBindGroup bind_group = nullptr;
   auto it = bind_groups.find(hash);
@@ -435,10 +463,25 @@ GroupsBinderWGPU<Device>& GroupsBinderWGPU<Device>::BindGroupImpl(
     bind_group = it->second;
   }
 
-  wgpuComputePassEncoderSetBindGroup(encoder, group_index, bind_group, 0,
-                                     nullptr);
+  SetBindGroup(encoder, group_index, bind_group);
+  // wgpuComputePassEncoderSetBindGroup(encoder, group_index, bind_group, 0,
+  //                                    nullptr);
 
   return *this;
+}
+
+template <typename Device, typename EncoderType>
+void GroupsBinderWGPU<Device, EncoderType>::SetBindGroup(
+    WGPUComputePassEncoder encoder, int group_index, WGPUBindGroup bind_group) {
+  wgpuComputePassEncoderSetBindGroup(encoder, group_index, bind_group, 0,
+                                     nullptr);
+}
+
+template <typename Device, typename EncoderType>
+void GroupsBinderWGPU<Device, EncoderType>::SetBindGroup(
+    WGPURenderPassEncoder encoder, int group_index, WGPUBindGroup bind_group) {
+  wgpuRenderPassEncoderSetBindGroup(encoder, group_index, bind_group, 0,
+                                    nullptr);
 }
 
 template <class Device>
@@ -499,6 +542,28 @@ class RenderPipelineBuilder {
     return *this;
   }
 
+  template <typename... GroupTuple>
+  RenderPipelineBuilder& BindGroups(Device& device,
+                                    const GroupTuple&... bind_group_tuple) {
+    LayoutBuilderWGPU<DeviceWGPU> layout_builder;
+
+    (layout_builder.BindGroup<GroupTuple>(device.GetDevice()), ...);
+    auto pipeline_layout = layout_builder.Finalize(device.GetDevice());
+    descriptor_.layout = pipeline_layout;
+
+    GroupsBinderWGPU<DeviceWGPU, WGPURenderPassEncoder> binder;
+    int i = 0;
+    (
+        [&bind_group_tuple, &layout_builder, &binder, &device](int i) {
+          binder.BindGroup(device.GetDevice(),
+                           layout_builder.GetBindGroupLayouts()[i],
+                           device.GetRenderEncoder(), bind_group_tuple, i);
+        }(i++),
+        ...);
+
+    return *this;
+  }
+
   WGPURenderPipeline Finalize(Device& device) {
     UpdateDescriptorPointers();
 
@@ -537,7 +602,7 @@ class RenderPipelineBuilder {
 
     if (!buffer_layouts_.empty()) {
       int i = 0;
-      
+
       for (auto& bl : buffer_layouts_) {
         int vertex_stride = 0;
         bl.attributes = attributes_per_buffer_[i].data();

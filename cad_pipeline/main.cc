@@ -168,8 +168,8 @@ int main() {
   }
   glfwSetErrorCallback(error_callback);
 
-  //wgpuSetLogCallback(log_callback, NULL);
-  //wgpuSetLogLevel(WGPULogLevel_Trace);
+  // wgpuSetLogCallback(log_callback, NULL);
+  // wgpuSetLogLevel(WGPULogLevel_Trace);
   auto *instance = wgpuCreateInstance(NULL);
   assert(instance);
   GLFWwindow *window = CreateWindow();
@@ -185,7 +185,7 @@ int main() {
                      .buffer_pool = BufferPool(device),
                      .device = &device,
                      .surface_texture = nullptr};
-
+    
   e.Register<CubeOp>();
   // e.Register<TextOp>();
   e.Register<TriangulateOp>();
@@ -233,8 +233,7 @@ int main() {
       case WGPUSurfaceGetCurrentTextureStatus_DeviceLost:
       case WGPUSurfaceGetCurrentTextureStatus_Force32:
         // Fatal error
-        printf(" get_current_texture status=%#.8x\n",
-               surface_texture.status);
+        printf(" get_current_texture status=%#.8x\n", surface_texture.status);
         abort();
     }
 

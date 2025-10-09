@@ -76,27 +76,63 @@ AnyGeometry SDFDraw(ExecutionContext& execution_context,
                 2 * 4 * 4 * (resolution.x / 16 + 1) * (resolution.y / 16 + 1));
 
             auto time_buf = execution_context.buffer_pool.ReserveBuffer(
-                WGPUBufferUsage_Storage, 4);
+                WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, 4);
 
             execution_context.device->BeginFrame();
+
+            float current_time =
+                std::chrono::duration_cast<std::chrono::duration<float>>(
+                    std::chrono::high_resolution_clock::now() -
+                    execution_context.start_time)
+                    .count();
+            std::println("time: {}", current_time);
+            execution_context.device->WriteBuffer(time_buf, 0, &current_time,
+                                                  sizeof(float));
+
             execution_context.device->BeginComputePass();
             execution_context.device->BindGroups(
                 compute_shader, "reset_counter",
-                std::tuple(internal_triangles, boundary_triangles, vertices,
-                           time_buf));
+                std::tuple(
+                    BufferWithBinding<WGPUBufferBindingType_Storage,
+                                      WGPUShaderStage_Compute, 0>{
+                        internal_triangles},
+                    BufferWithBinding<WGPUBufferBindingType_Storage,
+                                      WGPUShaderStage_Compute, 1>{
+                        boundary_triangles},
+                    BufferWithBinding<WGPUBufferBindingType_Storage,
+                                      WGPUShaderStage_Compute, 2>{vertices},
+                    BufferWithBinding<WGPUBufferBindingType_Uniform,
+                                      WGPUShaderStage_Compute, 3>{time_buf}));
             execution_context.device->DispatchWorgroups(1, 1, 1);
 
             execution_context.device->BindGroups(
                 compute_shader, "output_vertices",
-                std::tuple(internal_triangles, boundary_triangles, vertices,
-                           time_buf));
+                std::tuple(
+                    BufferWithBinding<WGPUBufferBindingType_Storage,
+                                      WGPUShaderStage_Compute, 0>{
+                        internal_triangles},
+                    BufferWithBinding<WGPUBufferBindingType_Storage,
+                                      WGPUShaderStage_Compute, 1>{
+                        boundary_triangles},
+                    BufferWithBinding<WGPUBufferBindingType_Storage,
+                                      WGPUShaderStage_Compute, 2>{vertices},
+                    BufferWithBinding<WGPUBufferBindingType_Uniform,
+                                      WGPUShaderStage_Compute, 3>{time_buf}));
             execution_context.device->DispatchWorgroups(
                 resolution.x / 16 + 1, resolution.y / 16 + 1, 1);
 
             // execution_context.device->BeginComputePass();
             execution_context.device->BindGroups(
                 compute_shader, "output_indices",
-                std::tuple(internal_triangles, boundary_triangles, vertices));
+                std::tuple(
+                    BufferWithBinding<WGPUBufferBindingType_Storage,
+                                      WGPUShaderStage_Compute, 0>{
+                        internal_triangles},
+                    BufferWithBinding<WGPUBufferBindingType_Storage,
+                                      WGPUShaderStage_Compute, 1>{
+                        boundary_triangles},
+                    BufferWithBinding<WGPUBufferBindingType_Storage,
+                                      WGPUShaderStage_Compute, 2>{vertices}));
             execution_context.device->DispatchWorgroups(
                 (resolution.x / 16) * (resolution.y / 16), 1, 1);
 
@@ -130,8 +166,8 @@ AnyGeometry SDFDraw(ExecutionContext& execution_context,
             RenderPipelineBuilder<DeviceWGPU> boundary_render_pipeline_builder;
             auto boundary_pipeline =
                 boundary_render_pipeline_builder
-                    .SetVertexShader(render_shader, "vs_boundary_main")
-                    .SetFragmentShader(render_shader, "fs_boundary_main")
+                    .SetVertexShader(compute_shader, "vs_boundary_main")
+                    .SetFragmentShader(compute_shader, "fs_boundary_main")
                     .AttachAttributeBuffer(
                         vertices,
                         {{WGPUVertexFormat_Float32x4, 0, 0},
@@ -145,6 +181,12 @@ AnyGeometry SDFDraw(ExecutionContext& execution_context,
                         {.count = 1, .mask = WGPUColorWriteMask_All})
                     .SetPrimitiveState(
                         {.topology = WGPUPrimitiveTopology_TriangleList})
+                    .BindGroups(
+                        *execution_context.device,
+                        std::tuple(
+                            BufferWithBinding<WGPUBufferBindingType_Uniform,
+                                              WGPUShaderStage_Fragment, 3>{
+                                time_buf}))
                     .Finalize(*execution_context.device);
 
             execution_context.device->DrawIndirectIndexed(boundary_triangles);
